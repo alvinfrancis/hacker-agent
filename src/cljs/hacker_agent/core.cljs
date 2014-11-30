@@ -22,11 +22,39 @@
     (.on (.child fb "maxitem") "value"
          (fn [snapshot]
            (let [db (js->clj (.val snapshot))]
+             (.. fb
+                 (child "item")
+                 (child db)
+                 (on "value"
+                     (fn [snapshot]
+                       (let [curr (js->clj (.val snapshot) :keywordize-keys true)]
+                         (global-put! :current-item curr)))))
              (global-put! :max-item db))))
     fb))
 
 ;; -------------------------
 ;; Components
+(defmulti hacker-item (fn [item]
+                        (if-let [type (#{"comment" "story"} (:type item))]
+                          type
+                          :default)))
+
+(defmethod hacker-item "comment"
+  [item]
+  (let [{:keys [id by text type time]} item]
+    [:ul
+     [:li "ID: " id]
+     [:li "By: " by]
+     [:li {:dangerouslySetInnerHTML {:__html (str "Text: " text)}}]
+     [:li "Time: " time]]))
+
+(defmethod hacker-item "story"
+  [item]
+  [:p "TODO: render story item"])
+
+(defmethod hacker-item :default
+  [item]
+  [:p "Item cannot be rendered"])
 
 (defn hacker []
   (let [fb (js/Firebase. "https://hacker-news.firebaseio.com/v0/topstories")]
@@ -34,8 +62,7 @@
      [:h2 "Home Page"]
      [:div
       [:h3 "Latest Item"]
-      [:div
-       (global-state :max-item)]]
+      [hacker-item (global-state :current-item)]]
      [:div
       [:h3 "Top Stories"]
       [:ul
