@@ -1,48 +1,67 @@
 (ns hacker-agent.core
-    (:require [reagent.core :as reagent :refer [atom]]
-              [secretary.core :as secretary :include-macros true]
-              [goog.events :as events]
-              [goog.history.EventType :as EventType])
-    (:import goog.History))
+  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require [reagent.core :as reagent :refer [atom]]
+            [secretary.core :as secretary :include-macros true]
+            [goog.events :as events]
+            [goog.history.EventType :as EventType]
+            [weasel.repl :as ws-repl]
+            [cljs.core.async :as async :refer [put! chan <! >! close!]]
+            [hacker-agent.session :as session :refer [global-state global-put!]])
+  (:import goog.History))
 
 ;; -------------------------
 ;; State
 (defonce app-state (atom {:text "Hello, this is: "}))
 
-(defn get-state [k & [default]]
-  (clojure.core/get @app-state k default))
+(defonce firebase
+  (let [fb (js/Firebase. "https://hacker-news.firebaseio.com/v0")]
+    (.on (.child fb "topstories") "value"
+         (fn [snapshot]
+           (let [db (js->clj (.val snapshot))]
+             (global-put! :stories db))))
+    (.on (.child fb "maxitem") "value"
+         (fn [snapshot]
+           (let [db (js->clj (.val snapshot))]
+             (global-put! :max-item db))))
+    fb))
 
-(defn put! [k v]
-  (swap! app-state assoc k v))
+;; -------------------------
+;; Components
+
+(defn hacker []
+  (let [fb (js/Firebase. "https://hacker-news.firebaseio.com/v0/topstories")]
+    [:div
+     [:h2 "Home Page"]
+     [:div
+      [:h3 "Latest Item"]
+      [:div
+       (global-state :max-item)]]
+     [:div
+      [:h3 "Top Stories"]
+      [:ul
+       (for [item (global-state :stories)]
+         ^{:key item} [:li item])]]]))
 
 ;; -------------------------
 ;; Views
 
 (defmulti page identity)
 
-(defmethod page :page1 [_]
-  [:div [:h2 (get-state :text) "Page 1"]
-   [:div [:a {:href "#/page2"} "go to page 2"]]])
-
-(defmethod page :page2 [_]
-  [:div [:h2 (get-state :text) "Page 2"]
-   [:div [:a {:href "#/"} "go to page 1"]]])
-
 (defmethod page :default [_]
   [:div "Invalid/Unknown route"])
 
+(defmethod page :hacker [_]
+  [hacker])
+
 (defn main-page []
-  [:div [page (get-state :current-page)]])
+  [:div [page :hacker]])
 
 ;; -------------------------
 ;; Routes
 (secretary/set-config! :prefix "#")
 
 (secretary/defroute "/" []
-  (put! :current-page :page1))
-
-(secretary/defroute "/page2" []
-  (put! :current-page :page2))
+  (swap! app-state assoc :current-page :hacker))
 
 ;; -------------------------
 ;; Initialize app
