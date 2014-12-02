@@ -1,11 +1,12 @@
 (ns hacker-agent.core
-  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [reagent.core :as reagent :refer [atom]]
             [secretary.core :as secretary :include-macros true]
             [goog.events :as events]
             [goog.history.EventType :as EventType]
             [weasel.repl :as ws-repl]
-            [cljs.core.async :as async :refer [put! chan <! >! close!]]
+            [cljs.core.async :as async :refer [put! chan <! >! close! merge]]
+            [pani.cljs.core :as p]
             [hacker-agent.session :as session :refer [global-state global-put!]])
   (:import goog.History))
 

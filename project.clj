@@ -10,6 +10,7 @@
                  [reagent "0.4.3"]
                  [reagent-utils "0.1.0"]
                  [secretary "1.2.0"]
+                 [pani "0.0.3"]
                  [org.clojure/clojurescript "0.0-2371" :scope "provided"]
                  [org.clojure/core.async "0.1.256.0-1bf8cf-alpha"]
                  [com.cemerick/piggieback "0.1.3"]
