@@ -10,9 +10,60 @@
             [hacker-agent.session :as session :refer [global-state global-put!]])
   (:import goog.History))
 
+(defonce hacker-root "https://hacker-news.firebaseio.com/v0")
+;; -------------------------
+;; Utils
+(defn snapshot->clj [snapshot]
+  (js->clj (.val snapshot) :keywordize-keys true))
+
+(defn id->fbref [id]
+  (.. (js/Firebase. hacker-root)
+      (child "item")
+      (child id)))
+
+(defn- fb->chan
+  ([fbref]
+   (let [events [:child_added :child_changed :child_removed]
+         chans (map (fn [event]
+                      (fb->chan fbref event))
+                    events)]
+     (merge chans)))
+  ([fbref event]
+   (let [c (chan)]
+     (.on fbref (clojure.core/name event)
+          (fn [snapshot]
+            (put! c [event
+                     (keyword (.key snapshot))
+                     (js->clj (.val snapshot))])))
+     c)))
+
+(defn- fb->atom [fbref]
+  (let [c (fb->chan fbref)
+        data (atom {})]
+    (go-loop [msg (<! c)]
+      (let [[event key val] msg]
+        (case event
+          :child_added (swap! data assoc key val)
+          :child_changed (swap! data assoc key val)
+          :child_removed (swap! data dissoc key)))
+      (recur (<! c)))
+    data))
+
+(defn listen
+  "Listens for events on the given firebase ref"
+  [root korks]
+  (let [root (p/walk-root root korks)
+        events [:child_added :child_removed :child_changed]
+        td (map (fn [[evt snap]]
+                  [evt (.name snap) (.val snap)]))
+        chans (map (fn [event]
+                     (fb->chan root event)) events)]
+    (merge chans)))
+
 ;; -------------------------
 ;; State
-(defonce app-state (atom {:text "Hello, this is: "}))
+
+(defonce app-state (atom {}))
 
 (defonce firebase
   (let [fb (js/Firebase. "https://hacker-news.firebaseio.com/v0")]
@@ -28,47 +79,61 @@
                  (child db)
                  (on "value"
                      (fn [snapshot]
-                       (let [curr (js->clj (.val snapshot) :keywordize-keys true)]
+                       (let [curr (snapshot->clj snapshot)]
                          (global-put! :current-item curr)))))
              (global-put! :max-item db))))
     fb))
 
 ;; -------------------------
 ;; Components
-(defmulti hacker-item (fn [item]
-                        (if-let [type (#{"comment" "story"} (:type item))]
-                          type
-                          :default)))
+;; (defmulti hacker-item (fn [item]
+;;                         (if-let [type (#{"comment" "story"} (:type item))]
+;;                           type
+;;                           :default)))
 
-(defmethod hacker-item "comment"
-  [item]
-  (let [{:keys [id by text type time]} item]
-    [:ul
-     [:li "ID: " id]
-     [:li "By: " by]
-     [:li {:dangerouslySetInnerHTML {:__html (str "Text: " text)}}]
-     [:li "Time: " time]]))
+;; (defmethod hacker-item "comment"
+;;   [item]
+;;   (let [{:keys [id by kids text type time]} item]
+;;     [:ul
+;;      [:li "ID: " id]
+;;      [:li "By: " by]
+;;      [:li {:dangerouslySetInnerHTML {:__html (str "Text: </br>" text)}}]
+;;      [:li "Number of Comments: " (count kids)]
+;;      [:li "Time: " time]]))
 
-(defmethod hacker-item "story"
-  [item]
-  [:p "TODO: render story item"])
+;; (defmethod hacker-item "story"
+;;   [item]
+;;   [:p "TODO: render story item"])
 
-(defmethod hacker-item :default
-  [item]
-  [:p "Item cannot be rendered"])
+;; (defmethod hacker-item :default
+;;   [item]
+;;   [:p "Item cannot be rendered"])
+
+(defn item [id]
+  (let [data (fb->atom (id->fbref id))]
+    (fn [id]
+      (let [{:keys [id by title kids type time url]} @data]
+        [:ul
+         [:li "ID: " id]
+         [:li "Title: " title]
+         [:li "URL: " url]
+         [:li "By: " by]
+         [:li "Comments: " (count kids)]
+         [:li "Time: " time]]))))
 
 (defn hacker []
-  (let [fb (js/Firebase. "https://hacker-news.firebaseio.com/v0/topstories")]
-    [:div
-     [:h2 "Home Page"]
-     [:div
-      [:h3 "Latest Item"]
-      [hacker-item (global-state :current-item)]]
-     [:div
-      [:h3 "Top Stories"]
-      [:ul
-       (for [item (global-state :stories)]
-         ^{:key item} [:li item])]]]))
+  [:div
+   [:h2 "Home Page"]
+   [:div
+    [:h3 "Test Story"]
+    [item 8678847]
+    ]
+   [:div
+    [:h3 "Top Stories"]
+    [:ul
+     (for [story (global-state :stories)]
+       ^{:key story} [:li [item story]])]
+    ]])
 
 ;; -------------------------
 ;; Views
