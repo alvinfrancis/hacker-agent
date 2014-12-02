@@ -131,40 +131,48 @@
 (defmethod item nil [_]
   [:p "Cannot render item"])
 
-(defn hacker []
+(defn hacker [id]
   [:div
-   [:h2 "Home Page"]
-   [:div
-    [:h3 "Top Story"]
-    [render (global-state :top-story)]
-    ]
+   [:h2 "Hacker News"]
+   [render id]
    ])
 
 ;; -------------------------
 ;; Views
 
-(defmulti page identity)
+(defmulti page :current-page)
 
 (defmethod page :default [_]
   [:div "Invalid/Unknown route"])
 
-(defmethod page :hacker [_]
-  [hacker])
+(defmethod page :main [state]
+  [hacker (global-state :top-story)])
 
-(defn main-page []
-  [:div [page :hacker]])
+(defmethod page :item [state]
+  [hacker (:current-item state)])
+
+(defn main-page [state]
+  [page @state])
 
 ;; -------------------------
 ;; Routes
 (secretary/set-config! :prefix "#")
 
 (secretary/defroute "/" []
-  (swap! app-state assoc :current-page :hacker))
+  (reset! app-state {:current-page :main
+                     :current-item (global-state :top-story)})
+)
+
+(secretary/defroute "/items/:id" [id]
+  (swap! app-state assoc
+         :current-page :item
+         :current-item id)
+)
 
 ;; -------------------------
 ;; Initialize app
 (defn init! []
-  (reagent/render-component [main-page] (.getElementById js/document "app")))
+  (reagent/render-component [main-page app-state] (.getElementById js/document "app")))
 
 ;; -------------------------
 ;; History
