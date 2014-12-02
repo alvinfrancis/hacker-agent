@@ -115,7 +115,7 @@
 (defmethod item "comment" [data]
   (let [{:keys [id by kids text type time score]} @data]
     [:ul
-     [:li "ID: " id]
+     [:li "ID: " [:a {:href (str "#/items/" id)} id]]
      [:li "By: " by]
      [:li "Score: " score]
      [:li {:dangerouslySetInnerHTML {:__html (str "Text: </br>" text)}}]
