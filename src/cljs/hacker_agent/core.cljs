@@ -88,19 +88,57 @@
 ;; -------------------------
 ;; Components
 
+(defmulti item #(:type (deref %)))
+
+(defn render [id]
+  (if (nil? id)
+    [:p "Nothing to render"]
+    (let [data (fb->atom (id->fbref id))]
+      (fn [id]
+        ;; (print (:type @data))
+        ;; (print "\n")
+        (item data)))))
+
+(defmethod item "story" [data]
+  (let [{:keys [id by title kids type time url score]} @data]
+    [:ul
+     [:li "ID: " id]
+     [:li "Title: " title]
+     [:li "URL: " url]
+     [:li "Score: " score]
+     [:li "By: " by]
+     [:li "Time: " time]
+     [:li "Comments: "
+      (for [comment kids]
+        ^{:key comment} [render comment])]]))
+
+(defmethod item "comment" [data]
+  (let [{:keys [id by kids text type time score]} @data]
+    [:ul
+     [:li "ID: " id]
+     [:li "By: " by]
+     [:li "Score: " score]
+     [:li {:dangerouslySetInnerHTML {:__html (str "Text: </br>" text)}}]
+     [:li "Time: " time]
+     [:li "Comments: "
+      (for [comment kids]
+        ^{:key comment} [render comment])]]))
+
+
+(defmethod item "job" [data]
+  [:p "This is a job"])
+
+(defmethod item nil [_]
+  [:p "Cannot render item"])
+
 (defn hacker []
   [:div
    [:h2 "Home Page"]
    [:div
-    [:h3 "Test Story"]
-    [item 8678847]
+    [:h3 "Top Story"]
+    [render (global-state :top-story)]
     ]
-   [:div
-    [:h3 "Top Stories"]
-    [:ul
-     (for [story (global-state :stories)]
-       ^{:key story} [:li [item story]])]
-    ]])
+   ])
 
 ;; -------------------------
 ;; Views
