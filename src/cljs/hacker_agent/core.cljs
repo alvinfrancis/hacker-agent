@@ -97,7 +97,7 @@
       (fn [id]
         ;; (print (:type @data))
         ;; (print "\n")
-        (item data)))))
+        [item data]))))
 
 (defmethod item "story" [data]
   (let [{:keys [id by title kids type time url score]} @data]
