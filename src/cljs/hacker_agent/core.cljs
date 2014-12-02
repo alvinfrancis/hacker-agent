@@ -134,7 +134,7 @@
 (defn hacker [id]
   [:div
    [:h2 "Hacker News"]
-   [render id]
+   [(with-meta render {}) id]
    ])
 
 ;; -------------------------
