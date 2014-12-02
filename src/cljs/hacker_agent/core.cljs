@@ -94,10 +94,7 @@
   (if (nil? id)
     [:p "Nothing to render"]
     (let [data (fb->atom (id->fbref id))]
-      (fn [id]
-        ;; (print (:type @data))
-        ;; (print "\n")
-        [item data]))))
+      (fn [id] [item data]))))
 
 (defmethod item "story" [data]
   (let [{:keys [id by title kids type time url score]} @data]
@@ -123,7 +120,6 @@
      [:li "Comments: "
       (for [comment kids]
         ^{:key comment} [render comment])]]))
-
 
 (defmethod item "job" [data]
   [:p "This is a job"])
