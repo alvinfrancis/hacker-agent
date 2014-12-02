@@ -70,6 +70,7 @@
     (.on (.child fb "topstories") "value"
          (fn [snapshot]
            (let [db (js->clj (.val snapshot))]
+             (global-put! :top-story (first db))
              (global-put! :stories db))))
     (.on (.child fb "maxitem") "value"
          (fn [snapshot]
