@@ -86,40 +86,6 @@
 
 ;; -------------------------
 ;; Components
-;; (defmulti hacker-item (fn [item]
-;;                         (if-let [type (#{"comment" "story"} (:type item))]
-;;                           type
-;;                           :default)))
-
-;; (defmethod hacker-item "comment"
-;;   [item]
-;;   (let [{:keys [id by kids text type time]} item]
-;;     [:ul
-;;      [:li "ID: " id]
-;;      [:li "By: " by]
-;;      [:li {:dangerouslySetInnerHTML {:__html (str "Text: </br>" text)}}]
-;;      [:li "Number of Comments: " (count kids)]
-;;      [:li "Time: " time]]))
-
-;; (defmethod hacker-item "story"
-;;   [item]
-;;   [:p "TODO: render story item"])
-
-;; (defmethod hacker-item :default
-;;   [item]
-;;   [:p "Item cannot be rendered"])
-
-(defn item [id]
-  (let [data (fb->atom (id->fbref id))]
-    (fn [id]
-      (let [{:keys [id by title kids type time url]} @data]
-        [:ul
-         [:li "ID: " id]
-         [:li "Title: " title]
-         [:li "URL: " url]
-         [:li "By: " by]
-         [:li "Comments: " (count kids)]
-         [:li "Time: " time]]))))
 
 (defn hacker []
   [:div
