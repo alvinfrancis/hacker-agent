@@ -94,7 +94,7 @@
   (if (nil? id)
     [:p "Nothing to render"]
     (let [data (fb->atom (id->fbref id))]
-      (fn [id] [item data]))))
+      [item data])))
 
 (defmethod item "story" [data]
   (let [{:keys [id by title kids type time url score]} @data]
@@ -130,8 +130,7 @@
 (defn hacker [id]
   [:div
    [:h2 "Hacker News"]
-   [(with-meta render {}) id]
-   ])
+   [render id]])
 
 ;; -------------------------
 ;; Views
