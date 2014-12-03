@@ -97,29 +97,42 @@
       [item data])))
 
 (defmethod item "story" [data]
-  (let [{:keys [id by title kids type time url score]} @data]
-    [:ul
-     [:li "ID: " id]
-     [:li "Title: " title]
-     [:li "URL: " url]
-     [:li "Score: " score]
-     [:li "By: " by]
-     [:li "Time: " time]
-     [:li "Comments: "
-      (for [comment kids]
-        ^{:key comment} [render comment])]]))
+  (let [local (atom {:collapse? true
+                     :collapse-comments? true})]
+    (fn [data]
+      (let [{:keys [id by title kids type time url score]} @data]
+        (if (:collapse? @local)
+          [:p {:on-click #(swap! local update-in [:collapse?] not)} title]
+          [:ul
+           [:li "ID: " id]
+           [:li {:on-click #(swap! local update-in [:collapse?] not)} title]
+           [:li "URL: " url]
+           [:li "Score: " score]
+           [:li "By: " by]
+           [:li "Time: " time]
+           (when kids
+             [:li [:span {:on-click #(swap! local update-in [:collapse-comments?] not)}
+                   "Comments: "]
+              (when-not (:collapse-comments? @local)
+                (for [comment kids]
+                  ^{:key comment} [render comment]))])])))))
 
 (defmethod item "comment" [data]
-  (let [{:keys [id by kids text type time score]} @data]
-    [:ul
-     [:li "ID: " [:a {:href (str "#/items/" id)} id]]
-     [:li "By: " by]
-     [:li "Score: " score]
-     [:li {:dangerouslySetInnerHTML {:__html (str "Text: </br>" text)}}]
-     [:li "Time: " time]
-     [:li "Comments: "
-      (for [comment kids]
-        ^{:key comment} [render comment])]]))
+  (let [local (atom {:collapse-comments? true})]
+    (fn [data]
+      (let [{:keys [id by kids text type time score]} @data]
+        [:ul
+         [:li "ID: " [:a {:href (str "/#/items/" id)} id]]
+         [:li "By: " by]
+         [:li "Score: " score]
+         [:li {:dangerouslySetInnerHTML {:__html (str "Text: </br>" text)}}]
+         [:li "Time: " time]
+         (when kids
+           [:li [:span {:on-click #(swap! local update-in [:collapse-comments?] not)}
+                 "Comments: "]
+            (when-not (:collapse-comments? @local)
+              (for [comment kids]
+                ^{:key comment} [render comment]))])]))))
 
 (defmethod item "job" [data]
   [:p "This is a job"])
