@@ -6,8 +6,7 @@
             [goog.history.EventType :as EventType]
             [weasel.repl :as ws-repl]
             [cljs.core.async :as async :refer [put! chan <! >! close! merge]]
-            [pani.cljs.core :as p]
-            [hacker-agent.session :as session :refer [global-state global-put!]])
+            [pani.cljs.core :as p])
   (:import goog.History))
 
 (defonce hacker-root "https://hacker-news.firebaseio.com/v0")
@@ -64,6 +63,12 @@
 ;; State
 
 (defonce app-state (atom {}))
+
+(defn global-state [k & [default]]
+  (get @app-state k default))
+
+(defn global-put! [k v]
+  (swap! app-state assoc k v))
 
 (defonce firebase
   (let [fb (js/Firebase. "https://hacker-news.firebaseio.com/v0")]
