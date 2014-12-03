@@ -179,4 +179,5 @@
        (secretary/dispatch! (.-token event))))
     (.setEnabled true)))
 ;; need to run this after routes have been defined
-(hook-browser-navigation!)
+(defonce hooked
+  (hook-browser-navigation!))
