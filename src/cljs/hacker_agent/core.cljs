@@ -36,6 +36,9 @@
                      (js->clj (.val snapshot))])))
      c)))
 
+(defn- id->fb-chan [id]
+  (fb->chan (id->fbref id)))
+
 (defn- fb->atom [fbref]
   (let [c (fb->chan fbref)
         data (atom {})]
