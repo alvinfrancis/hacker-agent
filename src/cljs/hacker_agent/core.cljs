@@ -10,8 +10,10 @@
   (:import goog.History))
 
 (defonce hacker-root "https://hacker-news.firebaseio.com/v0")
+(defonce test-atom (atom {}))
 ;; -------------------------
 ;; Utils
+
 (defn snapshot->clj [snapshot]
   (js->clj (.val snapshot) :keywordize-keys true))
 
@@ -93,7 +95,31 @@
              (global-put! :max-item db))))
     fb))
 
-;; -------------------------
+(defn init-data-sync!
+  "Given vector PATH and atom DATA, create callbacks on firebase
+  channel FBC to update PATH in DATA"
+  [path data fbc]
+  (letfn [(handle-kid [k v child-path]
+            (let [items (doall (map #(hash-map % {}) v))]
+              (swap! data assoc-in child-path (into {} items))
+              (doseq [id v]
+                (init-data-sync! (conj child-path id) data (id->fb-chan id)))))]
+    (go-loop [msg (<! fbc)]
+      (let [[event key val] msg
+            child-path (conj path key)]
+        (case event
+          :child_added (if (= key :kids)
+                         (handle-kid key val child-path)
+                         (swap! data assoc-in child-path val))
+          :child_changed (if (= key :kids)
+                           (handle-kid key val child-path)
+                           (swap! data assoc-in child-path val))
+          ;; TODO: implement dissoc-in?
+          :child_removed (swap! data assoc-in child-path nil) 
+          ))
+      (recur (<! fbc)))))
+
+;; ------------------------
 ;; Components
 
 (defmulti item #(:type (deref %)))
