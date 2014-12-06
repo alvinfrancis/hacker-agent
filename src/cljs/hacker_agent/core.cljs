@@ -44,13 +44,14 @@
 (defn- fb->atom [fbref]
   (let [c (fb->chan fbref)
         data (atom {})]
-    (go-loop [msg (<! c)]
-      (let [[event key val] msg]
-        (case event
-          :child_added (swap! data assoc key val)
-          :child_changed (swap! data assoc key val)
-          :child_removed (swap! data dissoc key)))
-      (recur (<! c)))
+    (go-loop []
+      (when-let [msg (<! c)]
+        (let [[event key val] msg]
+          (case event
+            :child_added (swap! data assoc key val)
+            :child_changed (swap! data assoc key val)
+            :child_removed (swap! data dissoc key)))
+        (recur)))
     data))
 
 (defn listen
