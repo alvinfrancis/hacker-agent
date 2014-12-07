@@ -35,46 +35,40 @@
   created from item ID to update PATH in DATA.  Channels created to
   update DATA will be stored in atom CHANS as a hash-map of ID and
   chan."
-  ([data id]
-   (init-data-sync! [:item] data id))
-  ([path data id]
-   (init-data-sync! path data id [:channels]))
-  ([path data id chan-path]
+  ([data id] (init-data-sync! data id [:entry]))
+  ([data id path] (init-data-sync! data id (conj path :item) (conj path :channels)))
+  ([data id path chan-path]
    (let [fbc (id->fb-chan id)]
      (swap! data assoc-in (conj chan-path id) fbc)
      (letfn [(handle-kid [k v child-path]
                (let [items (doall (map #(hash-map % {}) v))]
                  (swap! data assoc-in child-path (into {} items))
                  (doseq [id v]
-                   (init-data-sync! (conj child-path id) data id chan-path))))]
+                   (init-data-sync! data id (conj child-path id) chan-path))))]
        (go-loop []
          (when-let [msg (<! fbc)]
            (let [[event key val] msg
                  child-path (conj path key)]
-             (cond 
-              (= event :child_added)
-              (if (= key :kids)
-                (handle-kid key val child-path)
-                (swap! data assoc-in child-path val))
-
-              (= event :child_changed)
-              (if (= key :kids)
-                (handle-kid key val child-path)
-                (swap! data assoc-in child-path val))
-              ;; TODO: implement dissoc-in?
-              (= event :child_removed)
-              (swap! data assoc-in child-path nil) 
-
-              :else (.log js/console (clj->js [event key val]))
-              ))
+             (case event 
+               :child_added (if (= key :kids)
+                              (handle-kid key val child-path)
+                              (swap! data assoc-in child-path val))
+               :child_changed (if (= key :kids)
+                                (handle-kid key val child-path)
+                                (swap! data assoc-in child-path val))
+               ;; TODO: implement dissoc-in?
+               :child_removed (swap! data assoc-in child-path nil) 
+               (.log js/console (clj->js [event key val]))))
            (recur)))))))
 
-(defn reset-data-sync! [data id]
+(defn reset-data-sync! [id data path]
   (swap! data
          #(do
-            (when-let [{id-chans :channels} %]
+            (when-let [id-chans (get-in % (conj path :channels))]
               (doseq [[id chan] (seq id-chans)]
                 (.log js/console (str "Closing channel " id "."))
                 (close! chan)))
-            (dissoc % :item :channels)))
-  (init-data-sync! data id))
+            (update-in %
+                       path
+                       dissoc :item :channels)))
+  (init-data-sync! data id path))
