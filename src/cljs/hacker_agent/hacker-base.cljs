@@ -4,10 +4,23 @@
             [cljs.core.async :as async :refer [put! chan <! >! close! merge]]
             [pani.cljs.core :as p]))
 
-(defonce hacker-root "https://hacker-news.firebaseio.com/v0")
+(defonce url "https://hacker-news.firebaseio.com/v0")
+
+(defonce root (js/Firebase. url))
+
+(defn- bind! [fb event target f]
+  (.on (.child fb target)
+       event
+       f))
+
+(defn bind-top-stories! [data path]
+  (bind! root "value" "topstories"
+         (fn [snapshot]
+           (let [db (js->clj (.val snapshot))]
+             (swap! data assoc-in path db)))))
 
 (defn- id->fbref [id]
-  (.. (js/Firebase. hacker-root)
+  (.. root
       (child "item")
       (child id)))
 
@@ -66,7 +79,6 @@
          #(do
             (when-let [id-chans (get-in % (conj path :channels))]
               (doseq [[id chan] (seq id-chans)]
-                (.log js/console (str "Closing channel " id "."))
                 (close! chan)))
             (update-in %
                        path

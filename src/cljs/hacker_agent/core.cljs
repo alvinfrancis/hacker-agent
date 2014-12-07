@@ -9,65 +9,8 @@
             [hacker-agent.hacker-base :as base :refer [reset-data-sync!]])
   (:import goog.History))
 
-(defonce hacker-root "https://hacker-news.firebaseio.com/v0")
-(defonce test-atom (atom {}))
-;; -------------------------
-;; Utils
-
-(defn snapshot->clj [snapshot]
-  (js->clj (.val snapshot) :keywordize-keys true))
-
-(defn id->fbref [id]
-  (.. (js/Firebase. hacker-root)
-      (child "item")
-      (child id)))
-
-(defn- fb->chan
-  ([fbref]
-   (let [events [:child_added :child_changed :child_removed]
-         chans (map (fn [event]
-                      (fb->chan fbref event))
-                    events)]
-     (merge chans)))
-  ([fbref event]
-   (let [c (chan)]
-     (.on fbref (clojure.core/name event)
-          (fn [snapshot]
-            (put! c [event
-                     (keyword (.key snapshot))
-                     (js->clj (.val snapshot))])))
-     c)))
-
-(defn- id->fb-chan [id]
-  (fb->chan (id->fbref id)))
-
-(defn- fb->atom [fbref]
-  (let [c (fb->chan fbref)
-        data (atom {})]
-    (go-loop []
-      (when-let [msg (<! c)]
-        (let [[event key val] msg]
-          (case event
-            :child_added (swap! data assoc key val)
-            :child_changed (swap! data assoc key val)
-            :child_removed (swap! data dissoc key)))
-        (recur)))
-    data))
-
-(defn listen
-  "Listens for events on the given firebase ref"
-  [root korks]
-  (let [root (p/walk-root root korks)
-        events [:child_added :child_removed :child_changed]
-        td (map (fn [[evt snap]]
-                  [evt (.name snap) (.val snap)]))
-        chans (map (fn [event]
-                     (fb->chan root event)) events)]
-    (merge chans)))
-
 ;; -------------------------
 ;; State
-
 (defonce app-state (atom {}))
 
 (defn global-state [k & [default]]
@@ -76,42 +19,18 @@
 (defn global-put! [k v]
   (swap! app-state assoc k v))
 
-(defonce firebase
-  (let [fb (js/Firebase. "https://hacker-news.firebaseio.com/v0")]
-    (.on (.child fb "topstories") "value"
-         (fn [snapshot]
-           (let [db (js->clj (.val snapshot))]
-             (global-put! :top-story (first db))
-             (global-put! :stories db))))
-    (.on (.child fb "maxitem") "value"
-         (fn [snapshot]
-           (let [db (js->clj (.val snapshot))]
-             (.. fb
-                 (child "item")
-                 (child db)
-                 (on "value"
-                     (fn [snapshot]
-                       (let [curr (snapshot->clj snapshot)]
-                         (global-put! :current-item curr)))))
-             (global-put! :max-item db))))
-    fb))
+(defonce state-bound
+  (base/bind-top-stories! app-state [:top-stories]))
 
 ;; ------------------------
 ;; Components
-
-(defmulti item #(:type (deref %)))
-
-(defn render [id]
-  (if (nil? id)
-    [:p "Nothing to render"]
-    (let [data (fb->atom (id->fbref id))]
-      [item data])))
+(defmulti item :type)
 
 (defmethod item "story" [data]
-  (let [local (atom {:collapse? true
+  (let [local (atom {:collapse? false
                      :collapse-comments? true})]
     (fn [data]
-      (let [{:keys [id by title kids type time url score]} @data]
+      (let [{:keys [id by title kids type time url score]} data]
         (if (:collapse? @local)
           [:p {:on-click #(swap! local update-in [:collapse?] not)} title]
           [:ul
@@ -125,25 +44,26 @@
              [:li [:span {:on-click #(swap! local update-in [:collapse-comments?] not)}
                    "Comments: "]
               (when-not (:collapse-comments? @local)
-                (for [comment kids]
-                  ^{:key comment} [render comment]))])])))))
+                (for [[id sub-data] (vec kids)]
+                  ^{:key id} [item sub-data]))])])))))
 
 (defmethod item "comment" [data]
   (let [local (atom {:collapse-comments? true})]
     (fn [data]
-      (let [{:keys [id by kids text type time score]} @data]
-        [:ul
-         [:li "ID: " [:a {:href (str "/#/items/" id)} id]]
-         [:li "By: " by]
-         [:li "Score: " score]
-         [:li {:dangerouslySetInnerHTML {:__html (str "Text: </br>" text)}}]
-         [:li "Time: " time]
-         (when kids
-           [:li [:span {:on-click #(swap! local update-in [:collapse-comments?] not)}
-                 "Comments: "]
-            (when-not (:collapse-comments? @local)
-              (for [comment kids]
-                ^{:key comment} [render comment]))])]))))
+      (let [{:keys [id by kids parent text type time score deleted]} data]
+        (when-not deleted
+          [:ul
+           [:li "ID: " [:a {:href (str "/#/items/" id)} id]]
+           [:li "Parent: " [:a {:href (str "/#/items/" parent)} parent]]
+           [:li "By: " by]
+           [:li {:dangerouslySetInnerHTML {:__html (str "Text: </br>" text)}}]
+           [:li "Time: " time]
+           (when kids
+             [:li [:span {:on-click #(swap! local update-in [:collapse-comments?] not)}
+                   "Comments: "]
+              (when-not (:collapse-comments? @local)
+                (for [[id sub-data] (vec kids)]
+                  ^{:key id} [item sub-data]))])])))))
 
 (defmethod item "job" [data]
   [:p "This is a job"])
@@ -151,42 +71,45 @@
 (defmethod item nil [_]
   [:p "Cannot render item"])
 
-(defn hacker [id]
-  [:div
-   [:h2 "Hacker News"]
-   [render id]])
+(defn top-stories [state]
+  (let [{top-stories :top-stories} state]
+    [:ul
+     (for [id top-stories]
+       ^{:key id} [:li [:a {:href (str "/#/items/" id)} id]])]))
 
 ;; -------------------------
 ;; Views
+(defmulti page :render-view)
 
-(defmulti page :current-page)
-
-(defmethod page :default [_]
+(defmethod page nil [_]
   [:div "Invalid/Unknown route"])
 
 (defmethod page :main [state]
-  [hacker (global-state :top-story)])
+  [:div
+   [:h3 "Top Stories"]
+   [top-stories state]])
 
 (defmethod page :item [state]
-  [hacker (:current-item state)])
+  (when-let [entry (get-in state [:current-item :item])]
+    [item entry]))
 
 (defn main-page [state]
-  [page @state])
+  [:div
+   [:h2 "Hacker News"]
+   (page @state)])
 
 ;; -------------------------
 ;; Routes
 (secretary/set-config! :prefix "#")
 
 (secretary/defroute "/" []
-  (reset! app-state {:current-page :main
-                     :current-item (global-state :top-story)})
-)
+  (swap! app-state assoc
+         :render-view :main))
 
 (secretary/defroute "/items/:id" [id]
   (swap! app-state assoc
-         :current-page :item
-         :current-item id)
-)
+         :render-view :item)
+  (reset-data-sync! id app-state [:current-item]))
 
 ;; -------------------------
 ;; Initialize app
