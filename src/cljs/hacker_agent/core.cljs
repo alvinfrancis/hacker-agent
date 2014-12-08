@@ -6,18 +6,12 @@
             [goog.history.EventType :as EventType]
             [weasel.repl :as ws-repl]
             [cljs.core.async :as async :refer [put! chan <! >! close! merge]]
-            [hacker-agent.hacker-base :as base :refer [reset-data-sync!]])
+            [hacker-agent.hacker-base :as base :refer [reset-item-sync!]])
   (:import goog.History))
 
 ;; -------------------------
 ;; State
 (defonce app-state (atom {}))
-
-(defn global-state [k & [default]]
-  (get @app-state k default))
-
-(defn global-put! [k v]
-  (swap! app-state assoc k v))
 
 (defonce state-bound
   (base/bind-top-stories! app-state [:top-stories]))
@@ -104,7 +98,7 @@
 (secretary/defroute "/items/:id" [id]
   (swap! app-state assoc
          :render-view :item)
-  (reset-data-sync! id app-state [:current-item]))
+  (reset-item-sync! id app-state [:current-item]))
 
 ;; -------------------------
 ;; Initialize app

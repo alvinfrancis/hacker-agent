@@ -43,13 +43,30 @@
 (defn- id->fb-chan [id]
   (fb->chan (id->fbref id)))
 
-(defn init-data-sync!
+(defn id->atom
+  ([id] (id->atom (atom {}) id))
+  ([data id] (id->atom data id []))
+  ([data id path]
+   (let [fbc (id->fb-chan id)]
+     (go-loop []
+       (when-let [msg (<! fbc)]
+         (let [[event key val] msg
+               child-path (conj path key)]
+           (case event 
+             :child_added (swap! data assoc-in child-path val)
+             :child_changed (swap! data assoc-in child-path val)
+             :child_removed (swap! data update-in path dissoc key) 
+             (.log js/console (clj->js [event key val]))))
+         (recur)))
+     data)))
+
+(defn init-item-sync!
   "Given vector PATH and atom DATA, create callbacks on channel
   created from item ID to update PATH in DATA.  Channels created to
   update DATA will be stored in atom CHANS as a hash-map of ID and
   chan."
-  ([data id] (init-data-sync! data id [:entry]))
-  ([data id path] (init-data-sync! data id (conj path :item) (conj path :channels)))
+  ([data id] (init-item-sync! data id [:entry]))
+  ([data id path] (init-item-sync! data id (conj path :item) (conj path :channels)))
   ([data id path chan-path]
    (let [fbc (id->fb-chan id)]
      (swap! data assoc-in (conj chan-path id) fbc)
@@ -57,7 +74,7 @@
                (let [items (doall (map #(hash-map % {}) v))]
                  (swap! data assoc-in child-path (into {} items))
                  (doseq [id v]
-                   (init-data-sync! data id (conj child-path id) chan-path))))]
+                   (init-item-sync! data id (conj child-path id) chan-path))))]
        (go-loop []
          (when-let [msg (<! fbc)]
            (let [[event key val] msg
@@ -74,7 +91,7 @@
                (.log js/console (clj->js [event key val]))))
            (recur)))))))
 
-(defn reset-data-sync! [id data path]
+(defn reset-item-sync! [id data path]
   (swap! data
          #(do
             (when-let [id-chans (get-in % (conj path :channels))]
@@ -83,4 +100,4 @@
             (update-in %
                        path
                        dissoc :item :channels)))
-  (init-data-sync! data id path))
+  (init-item-sync! data id path))
