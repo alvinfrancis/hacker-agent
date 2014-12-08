@@ -57,11 +57,20 @@
                 (for [[id sub-data] (vec kids)]
                   ^{:key id} [comment sub-data]))])])))))
 
+(defn story-list-item [id]
+  (let [data (base/id->atom id)]
+    (fn [id]
+      (let [{:keys [id by title score]} @data]
+        (when id
+          [:li
+           [:p [:a {:href (str "/#/items/" id)} title] " * " score]
+           [:p "By: " by]])))))
+
 (defn top-stories [state]
   (let [{top-stories :top-stories} state]
     [:ul
-     (for [id top-stories]
-       ^{:key id} [:li [:a {:href (str "/#/items/" id)} id]])]))
+     (for [id (vec top-stories)]
+       ^{:key id} [story-list-item id])]))
 
 ;; -------------------------
 ;; Views
