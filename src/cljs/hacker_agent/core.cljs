@@ -22,7 +22,7 @@
   (let [local (atom {:collapse-comments? false})]
     (fn [data]
       (let [{:keys [id by kids parent text type time score deleted]} data]
-        (when-not deleted
+        (when (and id (not deleted))
           [:ul
            [:li "ID: " [:a {:href (str "/#/items/" id)} id]]
            [:li "Parent: " [:a {:href (str "/#/items/" parent)} parent]]
@@ -41,21 +41,22 @@
                      :collapse-comments? false})]
     (fn [data]
       (let [{:keys [id by title kids type time url score]} data]
-        (if (:collapse? @local)
-          [:p {:on-click #(swap! local update-in [:collapse?] not)} title]
-          [:ul
-           [:li "ID: " id]
-           [:li {:on-click #(swap! local update-in [:collapse?] not)} title]
-           [:li "URL: " url]
-           [:li "Score: " score]
-           [:li "By: " by]
-           [:li "Time: " time]
-           (when kids
-             [:li [:span {:on-click #(swap! local update-in [:collapse-comments?] not)}
-                   "Comments: "]
-              (when-not (:collapse-comments? @local)
-                (for [[id sub-data] (vec kids)]
-                  ^{:key id} [comment sub-data]))])])))))
+        (when id
+          (if (:collapse? @local)
+            [:p {:on-click #(swap! local update-in [:collapse?] not)} title]
+            [:ul
+             [:li "ID: " id]
+             [:li {:on-click #(swap! local update-in [:collapse?] not)} title]
+             [:li "URL: " url]
+             [:li "Score: " score]
+             [:li "By: " by]
+             [:li "Time: " time]
+             (when kids
+               [:li [:span {:on-click #(swap! local update-in [:collapse-comments?] not)}
+                     "Comments: "]
+                (when-not (:collapse-comments? @local)
+                  (for [[id sub-data] (vec kids)]
+                    ^{:key id} [comment sub-data]))])]))))))
 
 (defn story-list-item [id]
   (let [data (base/id->atom id)]
