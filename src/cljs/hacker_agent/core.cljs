@@ -24,9 +24,25 @@
 
 ;; ------------------------
 ;; Components
-(defmulti item :type)
+(defn comment [data]
+  (let [local (atom {:collapse-comments? true})]
+    (fn [data]
+      (let [{:keys [id by kids parent text type time score deleted]} data]
+        (when-not deleted
+          [:ul
+           [:li "ID: " [:a {:href (str "/#/items/" id)} id]]
+           [:li "Parent: " [:a {:href (str "/#/items/" parent)} parent]]
+           [:li "By: " by]
+           [:li {:dangerouslySetInnerHTML {:__html (str "Text: </br>" text)}}]
+           [:li "Time: " time]
+           (when kids
+             [:li [:span {:on-click #(swap! local update-in [:collapse-comments?] not)}
+                   "Comments: "]
+              (when-not (:collapse-comments? @local)
+                (for [[id sub-data] (vec kids)]
+                  ^{:key id} [comment sub-data]))])])))))
 
-(defmethod item "story" [data]
+(defn story [data]
   (let [local (atom {:collapse? false
                      :collapse-comments? true})]
     (fn [data]
@@ -45,31 +61,7 @@
                    "Comments: "]
               (when-not (:collapse-comments? @local)
                 (for [[id sub-data] (vec kids)]
-                  ^{:key id} [item sub-data]))])])))))
-
-(defmethod item "comment" [data]
-  (let [local (atom {:collapse-comments? true})]
-    (fn [data]
-      (let [{:keys [id by kids parent text type time score deleted]} data]
-        (when-not deleted
-          [:ul
-           [:li "ID: " [:a {:href (str "/#/items/" id)} id]]
-           [:li "Parent: " [:a {:href (str "/#/items/" parent)} parent]]
-           [:li "By: " by]
-           [:li {:dangerouslySetInnerHTML {:__html (str "Text: </br>" text)}}]
-           [:li "Time: " time]
-           (when kids
-             [:li [:span {:on-click #(swap! local update-in [:collapse-comments?] not)}
-                   "Comments: "]
-              (when-not (:collapse-comments? @local)
-                (for [[id sub-data] (vec kids)]
-                  ^{:key id} [item sub-data]))])])))))
-
-(defmethod item "job" [data]
-  [:p "This is a job"])
-
-(defmethod item nil [_]
-  [:p "Cannot render item"])
+                  ^{:key id} [comment sub-data]))])])))))
 
 (defn top-stories [state]
   (let [{top-stories :top-stories} state]
@@ -91,7 +83,10 @@
 
 (defmethod page :item [state]
   (when-let [entry (get-in state [:current-item :item])]
-    [item entry]))
+    (case (:type entry)
+      "story" [story entry]
+      "comment" [comment entry]
+      [:p "Cannot render item"])))
 
 (defn main-page [state]
   [:div
