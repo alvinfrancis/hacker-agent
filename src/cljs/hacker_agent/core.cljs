@@ -13,13 +13,13 @@
 ;; State
 (defonce app-state (atom {}))
 
-(defonce state-bound
+(defonce top-stories-bound
   (base/bind-top-stories! app-state [:top-stories]))
 
 ;; ------------------------
 ;; Components
 (defn comment [data]
-  (let [local (atom {:collapse-comments? true})]
+  (let [local (atom {:collapse-comments? false})]
     (fn [data]
       (let [{:keys [id by kids parent text type time score deleted]} data]
         (when-not deleted
@@ -38,7 +38,7 @@
 
 (defn story [data]
   (let [local (atom {:collapse? false
-                     :collapse-comments? true})]
+                     :collapse-comments? false})]
     (fn [data]
       (let [{:keys [id by title kids type time url score]} data]
         (if (:collapse? @local)
