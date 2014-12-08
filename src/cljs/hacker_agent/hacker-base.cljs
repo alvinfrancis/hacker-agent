@@ -8,21 +8,42 @@
 
 (defonce root (js/Firebase. url))
 
-(defn- bind! [fb event target f]
-  (.on (.child fb target)
-       event
-       f))
 
-(defn bind-top-stories! [data path]
-  (bind! root "value" "topstories"
+(defn- walk-root [r keys]
+  (let [[k & ks] keys]
+    (if ks
+      (recur (.child r (clojure.core/name k)) ks)
+      (.child r (clojure.core/name k)))))
+
+(defn- unbind!
+  ([fb event keys]
+   (.off (walk-root fb keys) (clojure.core/name event)))
+  ([fb event keys f]
+   (.off (walk-root fb keys) (clojure.core/name event) f)))
+
+(defn- bind!
+  ([fb event keys f]
+   (.on (walk-root fb keys)
+        (clojure.core/name event)
+        f)))
+
+(defn bind-item!
+  [id data path]
+  (bind! root :value [:item (str id)]
          (fn [snapshot]
-           (let [db (js->clj (.val snapshot))]
+           (let [db (js->clj (.val snapshot) :keywordize-keys true)]
              (swap! data assoc-in path db)))))
 
+(defn bind-top-stories! [data path]
+  (bind! root :value [:topstories]
+         (fn [snapshot]
+           (let [db (js->clj (.val snapshot))
+                 stories (map #(hash-map % {}) db)]
+             (swap! data assoc-in path db)
+))))
+
 (defn- id->fbref [id]
-  (.. root
-      (child "item")
-      (child id)))
+  (walk-root root [:item (str id)]))
 
 (defn- fb->chan
   ([fbref]
