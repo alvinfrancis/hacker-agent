@@ -9,6 +9,7 @@
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [reagent "0.4.3"]
                  [reagent-utils "0.1.0"]
+                 [reagent/reagent-cursor "0.1.2"]
                  [secretary "1.2.0"]
                  [pani "0.0.3"]
                  [org.clojure/clojurescript "0.0-2371" :scope "provided"]
