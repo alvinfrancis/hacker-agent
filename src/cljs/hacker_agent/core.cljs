@@ -61,17 +61,25 @@
 (defn story-list-item [id]
   (let [data (base/id->atom id)]
     (fn [id]
-      (let [{:keys [id by title score]} @data]
-        (when id
-          [:li
-           [:p [:a {:href (str "/#/items/" id)} title] " * " score]
-           [:p "By: " by]])))))
+      (let [{:keys [by title score]} @data]
+        (when (every? identity [by title score])
+          [:div
+           [:p [:a {:href (str "/#/items/" id)} title]]
+           [:p (str score " points by " by)
+            [:span {:on-click #(reset-item-sync! id app-state [:current-item])
+                    :style {:cursor :pointer}}
+             [:i " Preview "]]]])))))
 
 (defn top-stories [state]
-  (let [{top-stories :top-stories} state]
+  (let [{top-stories :top-stories} state
+        selected-story (get-in state [:current-item :item])]
     [:ul
      (for [id (vec top-stories)]
-       ^{:key id} [story-list-item id])]))
+       (if (= id (:id selected-story))
+         ^{:key id} [:li
+                     [story-list-item id]
+                     [story selected-story]]
+         ^{:key id} [:li [story-list-item id]]))]))
 
 ;; -------------------------
 ;; Views
