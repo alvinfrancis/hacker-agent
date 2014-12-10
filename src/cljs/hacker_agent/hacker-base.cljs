@@ -50,19 +50,22 @@
    (let [events [:child_added :child_changed :child_removed]
          chans (map (fn [event]
                       (fb->chan fbref event))
-                    events)]
-     (merge chans)))
+                    events)
+         event-chans (map first chans)
+         close-chans (map second chans)]
+     [(merge event-chans) (merge close-chans)]))
   ([fbref event]
-   (let [c (chan)]
+   (let [event-chan (chan)
+         close-chan (chan)]
      (.on fbref (clojure.core/name event)
           (fn [snapshot]
-            (put! c [event
-                     (keyword (.key snapshot))
-                     (js->clj (.val snapshot))])))
-     c)))
+            (put! event-chan [event
+                              (keyword (.key snapshot))
+                              (js->clj (.val snapshot))])))
+     [event-chan close-chan])))
 
 (defn- id->fb-chan [id]
-  (fb->chan (id->fbref id)))
+  (first (fb->chan (id->fbref id))))
 
 (defn id->atom
   ([id] (id->atom (atom {}) id))
