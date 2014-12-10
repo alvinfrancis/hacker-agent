@@ -38,7 +38,7 @@
 
 (defn story [data]
   (let [local (atom {:collapse? false
-                     :collapse-comments? false})]
+                     :collapse-comments? true})]
     (fn [data]
       (let [{:keys [id by title kids type time url score]} data]
         (when id
