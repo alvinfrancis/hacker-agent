@@ -8,7 +8,7 @@
 
 (defonce root (js/Firebase. url))
 
-(defonce channels (atom {}))
+(defonce channel-closers (atom {}))
 
 (defn- walk-root [r keys]
   (let [[k & ks] keys]
@@ -81,18 +81,18 @@
        (when-let [msg (<! fbc)]
          (let [[event key val] msg
                child-path (conj path key)]
-           (case event 
+           (case event
              :child_added (swap! data assoc-in child-path val)
              :child_changed (swap! data assoc-in child-path val)
-             :child_removed (swap! data update-in path dissoc key) 
+             :child_removed (swap! data update-in path dissoc key)
              (.log js/console (clj->js [event key val]))))
          (recur)))
      data)))
 
-(defn unbind-sync!
+(defn unbind-item-sync!
   [data path]
   (let [identifier (cons data path)]
-    (when-let [close-chan (get-in @channels identifier)]
+    (when-let [close-chan (get-in @channel-closers identifier)]
       (put! close-chan :close))
     (swap! data update-in path dissoc :item)))
 
@@ -130,17 +130,16 @@
                :child_removed (swap! data update-in path dissoc key)
                (.log js/console (clj->js [event key val]))))
            (recur)))
-       ;; The go loop still processes messages even after using .off
-       ;; on the source. As a workaround for now, create another tap
-       ;; on the close-mult and manually close the channel here.
+       ;; Close this go-loop as well in case it's not GC'ed.
+       ;; Should investigate.
        (go (<! close-loop-tap)
            (close! fbc))
        close-mult))))
 
 (defn reset-item-sync! [id data path]
   (let [identifier (cons data path)]
-    (when-let [close-chan (get-in @channels identifier)]
+    (when-let [close-chan (get-in @channel-closers identifier)]
       (put! close-chan :close))
     (swap! data update-in path dissoc :item)
-    (swap! channels assoc-in identifier
+    (swap! channel-closers assoc-in identifier
            (init-item-sync! data id path))))
