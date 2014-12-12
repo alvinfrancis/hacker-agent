@@ -64,8 +64,7 @@
                                (js->clj (.val snapshot))]))]
      (.on fbref (clojure.core/name event) handle-event)
      (go (<! close-chan)
-         (.off fbref (clojure.core/name event)
-               handle-event))
+         (.off fbref (clojure.core/name event)))
      event-chan)))
 
 (defn- id->fb-chan
