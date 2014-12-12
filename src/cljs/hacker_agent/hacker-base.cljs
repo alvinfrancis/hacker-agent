@@ -90,6 +90,13 @@
          (recur)))
      data)))
 
+(defn unbind-sync!
+  [data path]
+  (let [identifier (cons data path)]
+    (when-let [close-chan (get-in @channels identifier)]
+      (put! close-chan :close))
+    (swap! data update-in path dissoc :item)))
+
 (defn init-item-sync!
   "Given vector PATH and atom DATA, create callbacks on channel
   created from item ID to update PATH in DATA.  Returns a channel that
