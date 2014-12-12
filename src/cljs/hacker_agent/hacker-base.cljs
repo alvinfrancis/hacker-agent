@@ -1,13 +1,14 @@
 (ns hacker-agent.hacker-base
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [reagent.core :as reagent :refer [atom]]
-            [cljs.core.async :as async :refer [put! chan <! >! close! merge]]
+            [cljs.core.async :as async :refer [put! chan <! >! close! merge mult tap]]
             [pani.cljs.core :as p]))
 
 (defonce url "https://hacker-news.firebaseio.com/v0")
 
 (defonce root (js/Firebase. url))
 
+(defonce channels (atom {}))
 
 (defn- walk-root [r keys]
   (let [[k & ks] keys]
@@ -56,21 +57,21 @@
      (merge event-chans)))
   ([fbref close-chan event]
    (let [event-chan (chan)
-         close-chan (chan)
          handle-event (fn [snapshot]
                         (put! event-chan
                               [event
                                (keyword (.key snapshot))
                                (js->clj (.val snapshot))]))]
      (.on fbref (clojure.core/name event) handle-event)
-     (go
-       (let [msg (<! close-chan)]
+     (go (<! close-chan)
          (.off fbref (clojure.core/name event)
-               handle-event)))
+               handle-event))
      event-chan)))
 
-(defn- id->fb-chan [id]
-  (fb->chan (id->fbref id)))
+(defn- id->fb-chan
+  ([id] (id->fb-chan id (chan)))
+  ([id close-chan]
+   (fb->chan (id->fbref id) close-chan)))
 
 (defn id->atom
   ([id] (id->atom (atom {}) id))
@@ -91,42 +92,49 @@
 
 (defn init-item-sync!
   "Given vector PATH and atom DATA, create callbacks on channel
-  created from item ID to update PATH in DATA.  Channels created to
-  update DATA will be stored in atom CHANS as a hash-map of ID and
-  chan."
+  created from item ID to update PATH in DATA.  Returns a channel that
+  accepts any input to remove the callbacks created."
   ([data id] (init-item-sync! data id [:entry]))
-  ([data id path] (init-item-sync! data id (conj path :item) (conj path :channels)))
-  ([data id path chan-path]
-   (let [fbc (id->fb-chan id)]
-     (swap! data assoc-in (conj chan-path id) fbc)
+  ([data id path]
+   (let [close-chan (chan)]
+     (init-item-sync! data id (conj path :item) (mult close-chan))
+     close-chan))
+  ([data id path close-mult]
+   ;; mult to multiplex reading the close channel
+   ;; tap to create a channel from the mult
+   (let [fbc (id->fb-chan id (tap close-mult (chan)))
+         close-loop-tap (tap close-mult (chan))]
      (letfn [(handle-kid [k v child-path]
                (let [items (doall (map #(hash-map % {}) v))]
                  (swap! data assoc-in child-path (into {} items))
                  (doseq [id v]
-                   (init-item-sync! data id (conj child-path id) chan-path))))]
+                   (init-item-sync! data id (conj child-path id) close-mult))))]
+       ;; spawn a go loop that will update the data
        (go-loop []
          (when-let [msg (<! fbc)]
            (let [[event key val] msg
                  child-path (conj path key)]
-             (case event 
+             (case event
                :child_added (if (= key :kids)
                               (handle-kid key val child-path)
                               (swap! data assoc-in child-path val))
                :child_changed (if (= key :kids)
                                 (handle-kid key val child-path)
                                 (swap! data assoc-in child-path val))
-               ;; TODO: implement dissoc-in?
-               :child_removed (swap! data assoc-in child-path nil) 
+               :child_removed (swap! data update-in path dissoc key)
                (.log js/console (clj->js [event key val]))))
-           (recur)))))))
+           (recur)))
+       ;; The go loop still processes messages even after using .off
+       ;; on the source. As a workaround for now, create another tap
+       ;; on the close-mult and manually close the channel here.
+       (go (<! close-loop-tap)
+           (close! fbc))
+       close-mult))))
 
 (defn reset-item-sync! [id data path]
-  (swap! data
-         #(do
-            (when-let [id-chans (get-in % (conj path :channels))]
-              (doseq [[id chan] (seq id-chans)]
-                (close! chan)))
-            (update-in %
-                       path
-                       dissoc :item :channels)))
-  (init-item-sync! data id path))
+  (let [identifier (cons data path)]
+    (when-let [close-chan (get-in @channels identifier)]
+      (put! close-chan :close))
+    (swap! data update-in path dissoc :item)
+    (swap! channels assoc-in identifier
+           (init-item-sync! data id path))))
