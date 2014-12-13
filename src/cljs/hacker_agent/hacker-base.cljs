@@ -10,6 +10,19 @@
 
 (defonce channel-closers (atom {}))
 
+(defn- save-channel-closer! [data path channel]
+  (swap! channel-closers assoc-in (cons data path) channel))
+
+(defn- close-channel! [data path]
+  (let [identifier (cons data path)
+        prefix (butlast identifier)
+        suffix (last identifier)]
+    (when-let [close-chan (get-in @channel-closers identifier)]
+      (put! close-chan :close)
+      (if prefix
+        (swap! channel-closers update-in prefix dissoc suffix)
+        (swap! channel-closers dissoc suffix)))))
+
 (defn- walk-root [r keys]
   (let [[k & ks] keys]
     (if ks
@@ -34,14 +47,6 @@
          (fn [snapshot]
            (let [db (js->clj (.val snapshot) :keywordize-keys true)]
              (swap! data assoc-in path db)))))
-
-(defn bind-top-stories! [data path]
-  (bind! root :value [:topstories]
-         (fn [snapshot]
-           (let [db (js->clj (.val snapshot))
-                 stories (map #(hash-map % {}) db)]
-             (swap! data assoc-in path db)
-))))
 
 (defn- id->fbref [id]
   (walk-root root [:item (str id)]))
@@ -88,6 +93,38 @@
              (.log js/console (clj->js [event key val]))))
          (recur)))
      data)))
+
+(defn init-story-sync! [data id path]
+  (let [close-chan (chan)
+        fbc (fb->chan (id->fbref id) close-chan)]
+    (save-channel-closer! data path close-chan)
+    (go-loop []
+      (when-let [msg (<! fbc)]
+        (let [[event key val] msg
+              child-path (conj path key)]
+          (case event
+            :child_added (swap! data assoc-in child-path val)
+            :child_changed (swap! data assoc-in child-path val)
+            :child_removed (swap! data update-in path dissoc key)
+            (.log js/console (clj->js [event key val]))))
+        (recur)))
+    close-chan))
+
+(defn init-stories-sync! [data path]
+  (let [ref (walk-root root [:topstories])
+        fbc (fb->chan ref)]
+    (go-loop []
+      (when-let [msg (<! fbc)]
+        (let [[event key val] msg
+              child-path (conj path key)]
+          (case event
+            :child_added (init-story-sync! data val child-path)
+            :child_changed (do (close-channel! data child-path)
+                               ;; TODO: check if race condition occurs here
+                               (init-story-sync! data val child-path))
+            :child_removed (swap! data update-in path dissoc key)
+            (.log js/console (clj->js [event key val]))))
+        (recur)))))
 
 (defn unbind-item-sync!
   [data path]

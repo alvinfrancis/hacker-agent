@@ -13,8 +13,8 @@
 ;; State
 (defonce app-state (atom {}))
 
-(defonce top-stories-bound
-  (base/bind-top-stories! app-state [:top-stories]))
+(defonce stories-synced
+  (base/init-stories-sync! app-state [:top-stories]))
 
 ;; ------------------------
 ;; Components
@@ -58,28 +58,27 @@
                   (for [[id sub-data] (vec kids)]
                     ^{:key id} [comment sub-data]))])]))))))
 
-(defn story-list-item [id]
-  (let [data (base/id->atom id)]
-    (fn [id]
-      (let [{:keys [by title score]} @data]
-        (when (every? identity [by title score])
-          [:div
-           [:p [:a {:href (str "/#/items/" id)} title]]
-           [:p (str score " points by " by)
-            [:span {:on-click #(reset-item-sync! id app-state [:current-item])
-                    :style {:cursor :pointer}}
-             [:i " Preview "]]]])))))
+(defn story-list-item [story]
+  (let [{:keys [by id title score]} story]
+    (when (every? identity [by title score])
+      [:div
+       [:p [:a {:href (str "/#/items/" id)} title]]
+       [:p (str score " points by " by)
+        [:span {:on-click #(reset-item-sync! id app-state [:current-item])
+                :style {:cursor :pointer}}
+         [:i " Preview "]]]])))
 
 (defn top-stories [state]
   (let [{top-stories :top-stories} state
         selected-story (get-in state [:current-item :item])]
     [:ul
-     (for [id (vec top-stories)]
-       (if (= id (:id selected-story))
-         ^{:key id} [:li
-                     [story-list-item id]
-                     [story selected-story]]
-         ^{:key id} [:li [story-list-item id]]))]))
+     (for [[index entry] (into (sorted-map) top-stories)]
+       (let [id (entry :id)]
+         (if (= id (:id selected-story))
+           ^{:key index} [:li
+                       [story-list-item entry]
+                       [story selected-story]]
+           ^{:key index} [:li [story-list-item entry]])))]))
 
 ;; -------------------------
 ;; Views
