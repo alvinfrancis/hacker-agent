@@ -1,7 +1,8 @@
 (ns hacker-agent.hacker-base
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [reagent.core :as reagent :refer [atom]]
-            [cljs.core.async :as async :refer [put! chan <! >! close! merge mult tap]]))
+            [cljs.core.async :as async :refer [put! chan <! >! close! merge mult tap]]
+            [hacker-agent.utils :as utils :refer [dissoc-in]]))
 
 (defonce url "https://hacker-news.firebaseio.com/v0")
 
