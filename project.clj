@@ -7,7 +7,7 @@
   :source-paths ["src/clj" "src/cljs"]
 
   :dependencies [[org.clojure/clojure "1.6.0"]
-                 [reagent "0.4.3"]
+                 [reagent "0.5.0-alpha"]
                  [reagent-utils "0.1.0"]
                  [secretary "1.2.0"]
                  [org.clojure/clojurescript "0.0-2371" :scope "provided"]
