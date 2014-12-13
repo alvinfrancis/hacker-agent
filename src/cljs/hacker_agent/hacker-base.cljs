@@ -13,14 +13,10 @@
   (swap! channel-closers assoc-in (cons data path) channel))
 
 (defn- close-channel! [data path]
-  (let [identifier (cons data path)
-        prefix (butlast identifier)
-        suffix (last identifier)]
+  (let [identifier (cons data path)]
     (when-let [close-chan (get-in @channel-closers identifier)]
       (put! close-chan :close)
-      (if prefix
-        (swap! channel-closers update-in prefix dissoc suffix)
-        (swap! channel-closers dissoc suffix)))))
+      (swap! channel-closers dissoc-in identifier))))
 
 (defn- walk-root [r keys]
   (let [[k & ks] keys]
