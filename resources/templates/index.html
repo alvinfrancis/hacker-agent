@@ -10,12 +10,12 @@
     <div id="app"></div>
     <script src="https://cdn.firebase.com/js/client/2.0.2/firebase.js"></script>
     {% if dev %}
-      <script src="//cdnjs.cloudflare.com/ajax/libs/react/0.12.1/react.js"></script>
+      <script src="//cdnjs.cloudflare.com/ajax/libs/react/0.12.1/react-with-addons.js"></script>
       {% script "js/out/goog/base.js" %}
       {% script "js/app.js" %}
       <script type="text/javascript">goog.require("hacker_agent.dev");</script>
     {% else %}
-      <script src="//cdnjs.cloudflare.com/ajax/libs/react/0.12.1/react.min.js"></script>
+      <script src="//cdnjs.cloudflare.com/ajax/libs/react/0.12.1/react-with-addons.min.js"></script>
       {% script "js/app.js" %}
     {% endif %}
   </body>
