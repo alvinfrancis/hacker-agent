@@ -23,18 +23,20 @@
     (fn [data]
       (let [{:keys [id by kids parent text type time score deleted]} data]
         (when (and id (not deleted))
-          [:ul
-           [:li "ID: " [:a {:href (str "/#/items/" id)} id]]
-           [:li "Parent: " [:a {:href (str "/#/items/" parent)} parent]]
-           [:li "By: " by]
-           [:li {:dangerouslySetInnerHTML {:__html (str "Text: </br>" text)}}]
-           [:li "Time: " time]
+          [:ul {:on-click #(do
+                             (swap! local update-in [:collapse-comments?] not)
+                             (.stopPropagation %))
+                :style {:cursor "pointer"}}
+           [:li
+            [:p
+             (str by " " time " | ")
+             [:a {:href (str "/#/items/" id)} "link"]
+             [:p {:dangerouslySetInnerHTML {:__html text}}]]]
            (when kids
-             [:li [:span {:on-click #(swap! local update-in [:collapse-comments?] not)}
-                   "Comments: "]
-              (when-not (:collapse-comments? @local)
-                (for [[id sub-data] (vec kids)]
-                  ^{:key id} [comment sub-data]))])])))))
+             (if (:collapse-comments? @local)
+               [:p [:b "..."]]
+               (for [[id sub-data] (vec kids)]
+                 ^{:key id} [comment sub-data])))])))))
 
 (defn story [data]
   (let [local (atom {:collapse? false
@@ -59,25 +61,30 @@
                     ^{:key id} [comment sub-data]))])]))))))
 
 (defn story-list-item [story]
-  (let [{:keys [by id title score]} story]
+  (let [{:keys [by id title score url kids]} story]
     (when (every? identity [by title score])
       [:div
-       [:p [:a {:href (str "/#/items/" id)} title]]
-       [:p (str score " points by " by)
+       [:p [:a {:href url} title]]
+       [:p
+        (str score " points by " by)
+        " | "
+        [:a {:href (str "/#/items/" id)}
+         (str (count kids) " comments")]
+        " | "
         [:span {:on-click #(reset-item-sync! id app-state [:current-item])
                 :style {:cursor :pointer}}
-         [:i " Preview "]]]])))
+         [:i "Preview"]]]])))
 
 (defn top-stories [state]
   (let [{top-stories :top-stories} state
         selected-story (get-in state [:current-item :item])]
-    [:ul
+    [:ol
      (for [[index entry] (into (sorted-map) top-stories)]
        (let [id (entry :id)]
          (if (= id (:id selected-story))
            ^{:key index} [:li
-                       [story-list-item entry]
-                       [story selected-story]]
+                          [story-list-item entry]
+                          [story selected-story]]
            ^{:key index} [:li [story-list-item entry]])))]))
 
 ;; -------------------------
