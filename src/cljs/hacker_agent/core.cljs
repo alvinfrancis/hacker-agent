@@ -18,6 +18,16 @@
 
 ;; ------------------------
 ;; Components
+(defn nav []
+  [:div.nav
+   [:h2 "Hacker News"]
+   [:ul
+    [:li [:a {:href "#/"} "Top"]]
+    [:li [:a {:href "#"} "New"]]
+    [:li [:a {:href "#"} "Threads"]]
+    [:li [:a {:href "#"} "Comments"]]
+    [:li [:a {:href "#"} "Show"]]]])
+
 (defn comment [data]
   (let [local (atom {:collapse-comments? false})]
     (fn [data]
@@ -108,7 +118,7 @@
 
 (defn main-page [state]
   [:div
-   [:h2 "Hacker News"]
+   [nav]
    (page @state)])
 
 ;; -------------------------

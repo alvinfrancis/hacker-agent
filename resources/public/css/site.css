@@ -9,6 +9,31 @@ body {
   line-height: 1.5em;
 }
 
+.nav h2 {
+  display: inline;
+  padding-right: 15px;
+}
+
+.nav ul {
+  margin-left:0;
+  padding-left:0;
+  display: inline;
+}
+
+.nav ul > li {
+  margin-left: 0;
+  padding: 3px 15px;
+  list-style: none;
+  display: inline;
+}
+
+.nav ul > li.first {
+  margin-left: 0;
+  border-left: none;
+  list-style: none;
+  display: inline;
+}
+
 h1, h2, h3 {
   color: #000;
 }
