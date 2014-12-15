@@ -109,9 +109,7 @@
   [:div "Invalid/Unknown route"])
 
 (defmethod page :main [state]
-  [:div
-   [:h3 "Top Stories"]
-   [top-stories state]])
+  [top-stories state])
 
 (defmethod page :item [state]
   (when-let [entry (get-in state [:current-item :item])]
