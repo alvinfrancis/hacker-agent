@@ -57,3 +57,19 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+.item {
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-bottom: 10px;
+  padding-top: 5px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  line-height: 32px;
+  border-radius: 2px;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+}
+
+.item > ul {
+  list-style: none;
+}
