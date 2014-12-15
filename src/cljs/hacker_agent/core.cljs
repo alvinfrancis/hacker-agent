@@ -32,21 +32,24 @@
   (let [local (atom {:collapse-comments? false})]
     (fn [data]
       (let [{:keys [id by kids parent text type time score deleted]} data]
-        (when (and id (not deleted))
-          [:ul {:on-click #(do
-                             (swap! local update-in [:collapse-comments?] not)
-                             (.stopPropagation %))
-                :style {:cursor "pointer"}}
-           [:li
-            [:p
-             (str by " " time " | ")
-             [:a {:href (str "/#/items/" id)} "link"]
-             [:p {:dangerouslySetInnerHTML {:__html text}}]]]
-           (when kids
-             (if (:collapse-comments? @local)
-               [:p [:b "..."]]
-               (for [[id sub-data] (vec kids)]
-                 ^{:key id} [comment sub-data])))])))))
+        (when-not deleted
+          (if (and data (not id))
+            [:p "Loading..."]
+            [:ul
+             {:on-click #(do
+                           (swap! local update-in [:collapse-comments?] not)
+                           (.stopPropagation %))
+              :style {:cursor "pointer"}}
+             [:li
+              [:p
+               (str by " " time " | ")
+               [:a {:href (str "/#/items/" id)} "link"]
+               [:p {:dangerouslySetInnerHTML {:__html text}}]]]
+             (when kids
+               (if (:collapse-comments? @local)
+                 [:p [:b (count kids) " comments"]]
+                 (for [[id sub-data] (vec kids)]
+                   ^{:key id} [comment sub-data])))]))))))
 
 (defn story [data]
   (let [local (atom {:collapse? false
