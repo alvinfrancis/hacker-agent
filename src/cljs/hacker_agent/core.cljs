@@ -6,7 +6,8 @@
             [goog.history.EventType :as EventType]
             [weasel.repl :as ws-repl]
             [cljs.core.async :as async :refer [put! chan <! >! close! merge]]
-            [hacker-agent.hacker-base :as base :refer [reset-item-sync!]])
+            [hacker-agent.hacker-base :as base :refer [reset-item-sync!]]
+            [hacker-agent.time :as t])
   (:import goog.History))
 
 ;; -------------------------
@@ -43,7 +44,7 @@
                :style {:cursor "pointer"}}
               [:li
                [:p
-                (str by " " time " | ")
+                (str by " | " (t/time-ago time) " | ")
                 [:a {:href (str "/#/items/" id)} "link"]
                 [:p {:dangerouslySetInnerHTML {:__html text}}]]]
               (when kids
