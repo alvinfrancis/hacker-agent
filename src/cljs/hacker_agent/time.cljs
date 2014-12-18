@@ -3,7 +3,7 @@
 (defn- now []
   (quot
    (.. js/Date (now))
-   10))
+   1000))
 
 (defn- in-minutes [seconds]
   (quot seconds 60))
