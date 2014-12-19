@@ -51,9 +51,10 @@
   ([fbref]
    (fb->chan fbref (chan)))
   ([fbref close-chan]
-   (let [events [:child_added :child_changed :child_removed]
+   (let [mult-close (mult close-chan)
+         events [:child_added :child_changed :child_removed]
          event-chans (map (fn [event]
-                            (fb->chan fbref close-chan event))
+                            (fb->chan fbref (tap mult-close (chan)) event))
                           events)]
      (merge event-chans)))
   ([fbref close-chan event]
@@ -65,7 +66,7 @@
                                (js->clj (.val snapshot))]))]
      (.on fbref (clojure.core/name event) handle-event)
      (go (<! close-chan)
-         (.off fbref (clojure.core/name event)))
+         (.off fbref (clojure.core/name event) handle-event))
      event-chan)))
 
 (defn- id->fb-chan
