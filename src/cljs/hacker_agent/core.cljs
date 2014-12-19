@@ -53,27 +53,23 @@
                   (for [[id sub-data] (vec kids)]
                     ^{:key id} [comment sub-data])))])))])))
 
+(defn comment-list [comments]
+  [:ul
+   (for [[id sub-data] comments]
+     ^{:key id} [comment sub-data])])
+
 (defn story [data]
-  (let [local (atom {:collapse? false
-                     :collapse-comments? true})]
-    (fn [data]
-      (let [{:keys [id by title kids type time url score]} data]
-        (when id
-          (if (:collapse? @local)
-            [:p {:on-click #(swap! local update-in [:collapse?] not)} title]
-            [:ul
-             [:li "ID: " id]
-             [:li {:on-click #(swap! local update-in [:collapse?] not)} title]
-             [:li "URL: " url]
-             [:li "Score: " score]
-             [:li "By: " by]
-             [:li "Time: " time]
-             (when kids
-               [:li [:span {:on-click #(swap! local update-in [:collapse-comments?] not)}
-                     "Comments: "]
-                (when-not (:collapse-comments? @local)
-                  (for [[id sub-data] (vec kids)]
-                    ^{:key id} [comment sub-data]))])]))))))
+  (let [{:keys [id by title kids type time url score]} data]
+    (when id
+      [:div
+       [:p [:a {:href url} title]]
+       [:p
+        (str score " points by " by)
+        " | "
+        [:a {:href (str "/#/items/" id)}
+         (str (count kids) " comments")]]
+       (when kids
+         [comment-list (vec kids)])])))
 
 (defn story-list-item [story]
   (let [{:keys [by id title score url kids]} story]
@@ -99,7 +95,7 @@
          (if (= id (:id selected-story))
            ^{:key index} [:li
                           [story-list-item entry]
-                          [story selected-story]]
+                          [comment-list (vec (:kids selected-story))]]
            ^{:key index} [:li [story-list-item entry]])))]))
 
 ;; -------------------------
