@@ -126,7 +126,8 @@
 
 (secretary/defroute "/" []
   (swap! app-state assoc
-         :render-view :main))
+         :render-view :main)
+  (base/unbind-item-sync! app-state [:current-item]))
 
 (secretary/defroute "/items/:id" [id]
   (swap! app-state assoc
