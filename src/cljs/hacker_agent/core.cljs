@@ -88,7 +88,7 @@
 
 (defn top-stories [state]
   (let [{top-stories :top-stories} state
-        selected-story (get-in state [:current-item :item])]
+        selected-story (get-in state [:current-item])]
     [:ol
      (for [[index entry] (into (sorted-map) top-stories)]
        (let [id (entry :id)]
@@ -109,7 +109,7 @@
   [top-stories state])
 
 (defmethod page :item [state]
-  (when-let [entry (get-in state [:current-item :item])]
+  (when-let [entry (get-in state [:current-item])]
     (case (:type entry)
       "story" [story entry]
       "comment" [comment entry]

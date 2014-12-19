@@ -128,7 +128,7 @@
   (let [identifier (cons data path)]
     (when-let [close-chan (get-in @channel-closers identifier)]
       (put! close-chan :close))
-    (swap! data update-in path dissoc :item)))
+    (swap! data dissoc-in path)))
 
 (defn init-item-sync!
   "Given vector PATH and atom DATA, create callbacks on channel
@@ -137,7 +137,7 @@
   ([data id] (init-item-sync! data id [:entry]))
   ([data id path]
    (let [close-chan (chan)]
-     (init-item-sync! data id (conj path :item) (mult close-chan))
+     (init-item-sync! data id path (mult close-chan))
      close-chan))
   ([data id path close-mult]
    ;; mult to multiplex reading the close channel
@@ -174,6 +174,6 @@
   (let [identifier (cons data path)]
     (when-let [close-chan (get-in @channel-closers identifier)]
       (put! close-chan :close))
-    (swap! data update-in path dissoc :item)
+    (swap! data dissoc-in path)
     (swap! channel-closers assoc-in identifier
            (init-item-sync! data id path))))
