@@ -9,11 +9,14 @@
 
 (defonce channel-closers (atom {}))
 
+(defn- closer-path [data path]
+  (conj (vec (cons data path)) :-closer))
+
 (defn- save-channel-closer! [data path channel]
-  (swap! channel-closers assoc-in (cons data path) channel))
+  (swap! channel-closers assoc-in (closer-path data path) channel))
 
 (defn- close-channel! [data path]
-  (let [identifier (cons data path)]
+  (let [identifier (closer-path data path)]
     (when-let [close-chan (get-in @channel-closers identifier)]
       (put! close-chan :close)
       (swap! channel-closers dissoc-in identifier))))
@@ -23,25 +26,6 @@
     (if ks
       (recur (.child r (clojure.core/name k)) ks)
       (.child r (clojure.core/name k)))))
-
-(defn- unbind!
-  ([fb event keys]
-   (.off (walk-root fb keys) (clojure.core/name event)))
-  ([fb event keys f]
-   (.off (walk-root fb keys) (clojure.core/name event) f)))
-
-(defn- bind!
-  ([fb event keys f]
-   (.on (walk-root fb keys)
-        (clojure.core/name event)
-        f)))
-
-(defn bind-item!
-  [id data path]
-  (bind! root :value [:item (str id)]
-         (fn [snapshot]
-           (let [db (js->clj (.val snapshot) :keywordize-keys true)]
-             (swap! data assoc-in path db)))))
 
 (defn- id->fbref [id]
   (walk-root root [:item (str id)]))
@@ -89,38 +73,6 @@
              (.log js/console (clj->js [event key val]))))
          (recur)))
      data)))
-
-(defn init-story-sync! [data id path]
-  (let [close-chan (chan)
-        fbc (fb->chan (id->fbref id) close-chan)]
-    (save-channel-closer! data path close-chan)
-    (go-loop []
-      (when-let [msg (<! fbc)]
-        (let [[event key val] msg
-              child-path (conj path key)]
-          (case event
-            :child_added (swap! data assoc-in child-path val)
-            :child_changed (swap! data assoc-in child-path val)
-            :child_removed (swap! data update-in path dissoc key)
-            (.log js/console (clj->js [event key val]))))
-        (recur)))
-    close-chan))
-
-(defn init-stories-sync! [data path]
-  (let [ref (walk-root root [:topstories])
-        fbc (fb->chan ref)]
-    (go-loop []
-      (when-let [msg (<! fbc)]
-        (let [[event key val] msg
-              child-path (conj path key)]
-          (case event
-            :child_added (init-story-sync! data val child-path)
-            :child_changed (do (close-channel! data child-path)
-                               ;; TODO: check if race condition occurs here
-                               (init-story-sync! data val child-path))
-            :child_removed (swap! data update-in path dissoc key)
-            (.log js/console (clj->js [event key val]))))
-        (recur)))))
 
 (defn unbind-item-sync!
   [data path]
@@ -176,3 +128,42 @@
     (swap! data dissoc-in path)
     (swap! channel-closers assoc-in identifier
            (init-item-sync! data id path))))
+
+
+(declare bind!)
+
+(defn story-binder [data path msg]
+  (let [[event key val] msg
+        child-path (conj path key)]
+    (case event
+      :child_added (swap! data assoc-in child-path val)
+      :child_changed (swap! data assoc-in child-path val)
+      :child_removed (swap! data update-in path dissoc key)
+      (.log js/console (clj->js [event key val])))))
+
+(defn stories-binder [data path msg]
+  (let [[event key val] msg
+        child-path (conj path key)]
+    (case event
+      :child_added (bind! data child-path
+                          (id->fbref val)
+                          story-binder)
+      :child_changed (bind! data child-path
+                            (id->fbref val)
+                            story-binder)
+      (.log js/console (clj->js [event key val])))))
+
+(defn bind! [data path ref binder]
+  (close-channel! data path)
+  (let [close-chan (chan)
+        fbc (fb->chan ref close-chan)]
+    (save-channel-closer! data path close-chan)
+    (go-loop []
+      (when-let [msg (<! fbc)]
+        (binder data path msg)
+        (recur)))
+    close-chan))
+
+(defn init-stories-sync! [data path]
+  (let [ref (walk-root root [:topstories])]
+    (bind! data path ref stories-binder)))
