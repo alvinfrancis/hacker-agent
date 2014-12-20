@@ -15,7 +15,7 @@
 (defonce app-state (atom {}))
 
 (defonce stories-synced
-  (base/init-stories-sync! app-state [:top-stories]))
+  (base/bind! app-state [:top-stories] base/top-stories base/stories-binder))
 
 ;; ------------------------
 ;; Components

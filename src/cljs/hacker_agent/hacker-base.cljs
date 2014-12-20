@@ -13,6 +13,8 @@
       (recur (.child r (clojure.core/name k)) ks)
       (.child r (clojure.core/name k)))))
 
+(def top-stories (walk-root root [:topstories]))
+
 (defonce channel-closers (atom {}))
 
 (defn- closer-path [data path]
@@ -146,7 +148,3 @@
         (binder data path msg)
         (recur)))
     close-chan))
-
-(defn init-stories-sync! [data path]
-  (let [ref (walk-root root [:topstories])]
-    (bind! data path ref stories-binder)))
