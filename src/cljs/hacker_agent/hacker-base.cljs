@@ -7,6 +7,12 @@
 
 (defonce root (js/Firebase. url))
 
+(defn- walk-root [r keys]
+  (let [[k & ks] keys]
+    (if ks
+      (recur (.child r (clojure.core/name k)) ks)
+      (.child r (clojure.core/name k)))))
+
 (defonce channel-closers (atom {}))
 
 (defn- closer-path [data path]
@@ -20,12 +26,6 @@
     (when-let [close-chan (get-in @channel-closers identifier)]
       (put! close-chan :close)
       (swap! channel-closers dissoc-in identifier))))
-
-(defn- walk-root [r keys]
-  (let [[k & ks] keys]
-    (if ks
-      (recur (.child r (clojure.core/name k)) ks)
-      (.child r (clojure.core/name k)))))
 
 (defn- id->fbref [id]
   (walk-root root [:item (str id)]))
@@ -56,23 +56,6 @@
   ([id] (id->fb-chan id (chan)))
   ([id close-chan]
    (fb->chan (id->fbref id) close-chan)))
-
-(defn id->atom
-  ([id] (id->atom (atom {}) id))
-  ([data id] (id->atom data id []))
-  ([data id path]
-   (let [fbc (id->fb-chan id)]
-     (go-loop []
-       (when-let [msg (<! fbc)]
-         (let [[event key val] msg
-               child-path (conj path key)]
-           (case event
-             :child_added (swap! data assoc-in child-path val)
-             :child_changed (swap! data assoc-in child-path val)
-             :child_removed (swap! data update-in path dissoc key)
-             (.log js/console (clj->js [event key val]))))
-         (recur)))
-     data)))
 
 (defn unbind-item-sync!
   [data path]
