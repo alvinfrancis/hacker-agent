@@ -22,11 +22,10 @@
   (let [type-chan (type (chan))]
     (fn [x] (= type-chan (type x)))))
 
-(defn- closer-path [data path]
-  (conj (vec (cons data path)) :-closer))
-
 (defn- save-channel-closer! [data path channel]
-  (swap! channel-closers assoc-in (closer-path data path) channel))
+  (swap! channel-closers assoc-in
+         (conj (vec (cons data path)) :-closer)
+         channel))
 
 (defn- close-channel! [data path]
   (let [identifier (cons data path)]
