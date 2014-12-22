@@ -1,12 +1,16 @@
 body {
-  /* font-family: 'Helvetica Neue', Verdana, Helvetica, Arial, sans-serif; */
+  font-family: Verdana, Geneva, sans-serif;
   /* max-width: 1000px; */
   /* margin: 0 auto; */
   /* padding-top: 72px; */
   -webkit-font-smoothing: antialiased;
-  /* font-size: 1.125em; */
+  font-size: 10pt;
   color: #333;
   line-height: 1.5em;
+}
+
+.nav {
+  padding: 2px;
 }
 
 .nav h2 {
