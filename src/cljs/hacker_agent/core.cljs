@@ -6,7 +6,7 @@
             [goog.history.EventType :as EventType]
             [weasel.repl :as ws-repl]
             [cljs.core.async :as async :refer [put! chan <! >! close! merge]]
-            [hacker-agent.hacker-base :as base :refer [reset-item-sync!]]
+            [hacker-agent.hacker-base :as base]
             [hacker-agent.time :as t])
   (:import goog.History))
 
@@ -82,7 +82,9 @@
         [:a {:href (str "/#/items/" id)}
          (str (count kids) " comments")]
         " | "
-        [:span {:on-click #(reset-item-sync! id app-state [:current-item])
+        [:span {:on-click #(base/bind! app-state [:current-item]
+                                       (base/id->fbref id)
+                                       base/item-binder)
                 :style {:cursor :pointer}}
          [:i "Preview"]]]])))
 
@@ -127,12 +129,13 @@
 (secretary/defroute "/" []
   (swap! app-state assoc
          :render-view :main)
-  (base/unbind-item-sync! app-state [:current-item]))
+  (base/unbind! app-state [:current-item]))
 
 (secretary/defroute "/items/:id" [id]
-  (swap! app-state assoc
-         :render-view :item)
-  (reset-item-sync! id app-state [:current-item]))
+  (swap! app-state assoc :render-view :item)
+  (base/bind! app-state [:current-item]
+              (base/id->fbref id)
+              base/item-binder))
 
 ;; -------------------------
 ;; Initialize app

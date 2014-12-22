@@ -66,62 +66,6 @@
   ([id close-chan]
    (fb->chan (id->fbref id) close-chan)))
 
-(defn unbind-item-sync!
-  [data path]
-  (let [identifier (cons data path)]
-    (when-let [close-chan (get-in @channel-closers identifier)]
-      (put! close-chan :close))
-    (swap! data dissoc-in path)))
-
-(defn init-item-sync!
-  "Given vector PATH and atom DATA, create callbacks on channel
-  created from item ID to update PATH in DATA.  Returns a channel that
-  accepts any input to remove the callbacks created."
-  ([data id] (init-item-sync! data id [:entry]))
-  ([data id path]
-   (let [close-chan (chan)]
-     (init-item-sync! data id path (mult close-chan))
-     close-chan))
-  ([data id path close-mult]
-   ;; mult to multiplex reading the close channel
-   ;; tap to create a channel from the mult
-   (let [fbc (id->fb-chan id (tap close-mult (chan)))
-         close-loop-tap (tap close-mult (chan))]
-     (letfn [(handle-kid [k v child-path]
-               (let [items (doall (map #(hash-map % {}) v))]
-                 (swap! data assoc-in child-path (into {} items))
-                 (doseq [id v]
-                   (init-item-sync! data id (conj child-path id) close-mult))))]
-       ;; spawn a go loop that will update the data
-       (go-loop []
-         (when-let [msg (<! fbc)]
-           (let [[event key val] msg
-                 child-path (conj path key)]
-             (case event
-               :child_added (if (= key :kids)
-                              (handle-kid key val child-path)
-                              (swap! data assoc-in child-path val))
-               :child_changed (if (= key :kids)
-                                (handle-kid key val child-path)
-                                (swap! data assoc-in child-path val))
-               :child_removed (swap! data update-in path dissoc key)
-               (.log js/console (clj->js [event key val]))))
-           (recur)))
-       ;; Close this go-loop as well in case it's not GC'ed.
-       ;; Should investigate.
-       (go (<! close-loop-tap)
-           (close! fbc))
-       close-mult))))
-
-(defn reset-item-sync! [id data path]
-  (let [identifier (cons data path)]
-    (when-let [close-chan (get-in @channel-closers identifier)]
-      (put! close-chan :close))
-    (swap! data dissoc-in path)
-    (swap! channel-closers assoc-in identifier
-           (init-item-sync! data id path))))
-
-
 (declare bind!)
 
 (defn story-binder [data path msg]
@@ -145,7 +89,25 @@
                             story-binder)
       (.log js/console (clj->js [event key val])))))
 
-(defn bind! [data path ref binder]
+(defn item-binder [data path msg]
+  (let [[event key val] msg
+        child-path (conj path key)]
+    (case event
+      :child_added (if (= key :kids)
+                     (doseq [id val]
+                       (bind! data (conj child-path id)
+                              (id->fbref id)
+                              item-binder))
+                     (swap! data assoc-in child-path val))
+      :child_changed (if (= key :kids)
+                       (doseq [id val]
+                         (bind! data (conj child-path id)
+                                (id->fbref id)
+                                item-binder))
+                       (swap! data assoc-in child-path val))
+      :child_removed (swap! data update-in path dissoc key)
+      (.log js/console (clj->js [event key val])))) )
+
 (defn unbind! [data path]
   (close-channel! data path)
   (swap! data dissoc-in path))
