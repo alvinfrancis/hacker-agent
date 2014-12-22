@@ -1,6 +1,6 @@
 (ns hacker-agent.core
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
-  (:require [reagent.core :as reagent :refer [atom]]
+  (:require [reagent.core :as r :refer [atom]]
             [secretary.core :as secretary :include-macros true]
             [goog.events :as events]
             [goog.history.EventType :as EventType]
@@ -140,7 +140,7 @@
 ;; -------------------------
 ;; Initialize app
 (defn init! []
-  (reagent/render-component [main-page app-state] (.getElementById js/document "app")))
+  (r/render-component [main-page app-state] (.getElementById js/document "app")))
 
 ;; -------------------------
 ;; History
