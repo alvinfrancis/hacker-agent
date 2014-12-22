@@ -1,6 +1,7 @@
 (ns hacker-agent.hacker-base
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
-  (:require [cljs.core.async :as async :refer [put! chan <! >! close! merge mult tap]]
+  (:require [clojure.walk :as walk]
+            [cljs.core.async :as async :refer [put! chan <! >! close! merge mult tap]]
             [hacker-agent.utils :as utils :refer [dissoc-in]]))
 
 (defonce url "https://hacker-news.firebaseio.com/v0")
@@ -17,6 +18,10 @@
 
 (defonce channel-closers (atom {}))
 
+(defonce type-chan?
+  (let [type-chan (type (chan))]
+    (fn [x] (= type-chan (type x)))))
+
 (defn- closer-path [data path]
   (conj (vec (cons data path)) :-closer))
 
@@ -24,9 +29,12 @@
   (swap! channel-closers assoc-in (closer-path data path) channel))
 
 (defn- close-channel! [data path]
-  (let [identifier (closer-path data path)]
-    (when-let [close-chan (get-in @channel-closers identifier)]
-      (put! close-chan :close)
+  (let [identifier (cons data path)]
+    (when-let [closers (get-in @channel-closers identifier)]
+      (walk/postwalk (fn [c]
+                       (when (type-chan? c)
+                         (put! c :close)))
+                     closers)
       (swap! channel-closers dissoc-in identifier))))
 
 (defn- id->fbref [id]
