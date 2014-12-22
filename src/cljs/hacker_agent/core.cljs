@@ -72,7 +72,7 @@
          [comment-list (vec kids)])])))
 
 (defn story-list-item [story]
-  (let [{:keys [by id title score url kids]} story]
+  (let [{:keys [by id title score url kids]} @story]
     (when (every? identity [by title score])
       [:div
        [:p [:a {:href url} title]]
@@ -88,30 +88,27 @@
                 :style {:cursor :pointer}}
          [:i "Preview"]]]])))
 
-(defn top-stories [state]
-  (let [{top-stories :top-stories} state
-        selected-story (get-in state [:current-item])]
-    [:ol
-     (for [[index entry] (into (sorted-map) top-stories)]
-       (let [id (entry :id)]
-         (if (= id (:id selected-story))
-           ^{:key index} [:li
-                          [story-list-item entry]
-                          [comment-list (vec (:kids selected-story))]]
-           ^{:key index} [:li [story-list-item entry]])))]))
+(defn top-stories [stories]
+  [:ol
+   (for [[index entry] (into (sorted-map) @stories)]
+     ^{:key index}
+     [:li [story-list-item
+           (r/wrap entry
+                   swap! stories assoc index)]])])
 
 ;; -------------------------
 ;; Views
-(defmulti page :render-view)
+(defmulti page #(:render-view (deref %)))
 
 (defmethod page nil [_]
   [:div "Invalid/Unknown route"])
 
 (defmethod page :main [state]
-  [top-stories state])
+  [top-stories (r/wrap (:top-stories @state)
+                       swap! app-state assoc :top-stories)])
 
 (defmethod page :item [state]
-  (when-let [entry (get-in state [:current-item])]
+  (when-let [entry (get-in @state [:current-item])]
     (case (:type entry)
       "story" [story entry]
       "comment" [comment entry]
@@ -120,7 +117,7 @@
 (defn main-page [state]
   [:div
    [nav]
-   (page @state)])
+   (page state)])
 
 ;; -------------------------
 ;; Routes
