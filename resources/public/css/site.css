@@ -9,6 +9,16 @@ body {
   line-height: 1.5em;
 }
 
+.old {
+  background-color: white;
+  transition: all 1s ease-in;
+}
+
+.new {
+  background-color: yellow;
+  transition: all 1s ease-in;
+}
+
 .nav {
   padding: 2px;
 }

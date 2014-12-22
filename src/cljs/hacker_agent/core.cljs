@@ -72,9 +72,13 @@
          [comment-list (vec kids)])])))
 
 (defn story-list-item [story]
-  (let [{:keys [by id title score url kids]} @story]
+  (let [{:keys [by id title score url kids -new?]} @story]
     (when (every? identity [by title score])
-      [:div
+      [:div {:class (if -new?
+                      (do
+                        (swap! story assoc :-new? false)
+                        "new")
+                      "old")}
        [:p [:a {:href url} title]]
        [:p
         (str score " points by " by)
