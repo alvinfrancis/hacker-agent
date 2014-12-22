@@ -43,7 +43,7 @@
                             (.stopPropagation %))
                :style {:cursor "pointer"}}
               [:li
-               [:p
+               [:p.subtext
                 (str by " | " (t/time-ago time) " | ")
                 [:a {:href (str "/#/items/" id)} "link"]
                 [:p {:dangerouslySetInnerHTML {:__html text}}]]]
@@ -62,8 +62,8 @@
   (let [{:keys [id by title kids type time url score]} data]
     (when id
       [:div
-       [:p [:a {:href url} title]]
-       [:p
+       [:p.title [:a {:href url} title]]
+       [:p.subtext
         (str score " points by " by)
         " | "
         [:a {:href (str "/#/items/" id)}
@@ -79,8 +79,8 @@
                         (swap! story assoc :-new? false)
                         "new")
                       "old")}
-       [:p [:a {:href url} title]]
-       [:p
+       [:p.title [:a {:href url} title]]
+       [:p.subtext
         (str score " points by " by)
         " | "
         [:a {:href (str "/#/items/" id)}
@@ -119,7 +119,7 @@
       [:p "Cannot render item"])))
 
 (defn main-page [state]
-  [:div
+  [:div.main
    [nav]
    (page state)])
 
