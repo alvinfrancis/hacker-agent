@@ -29,37 +29,32 @@
     [:li [:a {:href "#"} "Comments"]]
     [:li [:a {:href "#"} "Show"]]]])
 
+(declare comment-list)
 (defn comment [data]
-  (let [local (atom {:collapse-comments? false})]
-    (fn [data]
-      [:div.item
-       (let [{:keys [id by kids parent text type time score deleted]} data]
-         (when-not deleted
-           (if (and data (not id))
-             [:p "Loading..."]
-             [:ul
-              {:on-click #(do
-                            (swap! local update-in [:collapse-comments?] not)
-                            (.stopPropagation %))
-               :style {:cursor "pointer"}}
-              [:li
-               [:p.subtext
-                (str by " | " (t/time-ago time) " | ")
-                [:a {:href (str "/#/items/" id)} "link"]
-                [:p {:dangerouslySetInnerHTML {:__html text}}]]]
-              (when kids
-                (if (:collapse-comments? @local)
-                  [:p [:b (count kids) " comments"]]
-                  (for [[id sub-data] (vec kids)]
-                    ^{:key id} [comment sub-data])))])))])))
+  [:div
+   (let [{:keys [id by kids parent text type time score deleted]} @data]
+     (when-not deleted
+       (if (not id)
+         [:p "Loading..."]
+         [:div
+          {:on-click #(.log js/console (clj->js @data))
+           :style {:cursor "pointer"}}
+          [:p.subtext
+           (str by " | " (t/time-ago time) " | ")
+           [:a {:href (str "/#/items/" id)} "link"]]
+          [:p {:dangerouslySetInnerHTML {:__html text}}]
+          (when kids
+            [comment-list (r/wrap kids swap! data assoc :kids)])
+          ])))])
 
 (defn comment-list [comments]
-  [:ul
-   (for [[id sub-data] comments]
-     ^{:key id} [comment sub-data])])
+  [:ul.comments
+   (for [[id sub-data] (vec @comments)]
+     ^{:key id} [:li [comment (r/wrap sub-data
+                                      swap! comments assoc id)]])])
 
 (defn story [data]
-  (let [{:keys [id by title kids type time url score]} data]
+  (let [{:keys [id by title kids type time url score]} @data]
     (when id
       [:div
        [:p.title [:a {:href url} title]]
@@ -69,7 +64,7 @@
         [:a {:href (str "/#/items/" id)}
          (str (count kids) " comments")]]
        (when kids
-         [comment-list (vec kids)])])))
+         [comment-list (r/wrap kids swap! data assoc :kids)])])))
 
 (defn story-list-item [story]
   (let [{:keys [by id title score url kids -new?]} @story]
@@ -114,8 +109,8 @@
 (defmethod page :item [state]
   (when-let [entry (get-in @state [:current-item])]
     (case (:type entry)
-      "story" [story entry]
-      "comment" [comment entry]
+      "story" [story (r/wrap entry swap! state assoc :current-item)]
+      "comment" [comment (r/wrap entry swap! state assoc :current-item)]
       [:p "Cannot render item"])))
 
 (defn main-page [state]
