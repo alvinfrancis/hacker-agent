@@ -146,7 +146,12 @@
       (.log js/console (clj->js [event key val])))))
 
 (defn bind! [data path ref binder]
+(defn unbind! [data path]
   (close-channel! data path)
+  (swap! data dissoc-in path))
+
+(defn bind! [data path ref binder]
+  (unbind! data path)
   (let [close-chan (chan)
         fbc (fb->chan ref close-chan)]
     (save-channel-closer! data path close-chan)
