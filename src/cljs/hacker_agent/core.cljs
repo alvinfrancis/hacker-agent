@@ -21,7 +21,7 @@
 ;; Components
 (defn nav []
   [:div.nav
-   [:h2 "Hacker News"]
+   [:p "Hacker News"]
    [:ul
     [:li [:a {:href "#/"} "Top"]]
     [:li [:a {:href "#"} "New"]]
@@ -56,7 +56,7 @@
 (defn story [data]
   (let [{:keys [id by title kids type time url score]} @data]
     (when id
-      [:div
+      [:div.top-item
        [:p.title [:a {:href url} title]]
        [:p.subtext
         (str score " points by " by)
@@ -88,7 +88,7 @@
          [:i "Preview"]]]])))
 
 (defn top-stories [stories]
-  [:ol
+  [:ol.stories
    (for [[index entry] (into (sorted-map) @stories)]
      ^{:key index}
      [:li [story-list-item
@@ -116,7 +116,8 @@
 (defn main-page [state]
   [:div.main
    [nav]
-   (page state)])
+   [:div.page
+    (page state)]])
 
 ;; -------------------------
 ;; Routes

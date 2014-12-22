@@ -10,11 +10,16 @@ body {
 }
 
 .main {
-  padding: 5% 3%;
+  margin: 0 auto;
+  max-width: 80em;
+  background-color: #f6f6ef;
+}
+
+.page {
+  padding: 0 1.5em;
 }
 
 .old {
-  background-color: white;
   transition: all 1s ease-in;
 }
 
@@ -76,31 +81,38 @@ h3 {
 
 a {
   text-decoration: none;
-  color: #09f;
+  color: #333333;
 }
 
 a:hover {
   text-decoration: underline;
 }
 
-.item {
-  padding-left: 10px;
-  padding-right: 10px;
-  padding-bottom: 10px;
-  padding-top: 5px;
-  margin-top: 5px;
-  margin-bottom: 5px;
-  line-height: 32px;
-  border-radius: 2px;
-  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+.comments {
+  list-style: none;
+  padding-left: 2em;
+  font-size: 9pt;
 }
 
-.item > ul {
-  list-style: none;
+.top-item {
+  font-size: 9pt;
+}
+
+.top-item > ul {
+  padding: 0;
+}
+
+.comments li {
+  padding-left: 0;
 }
 
 .title {
   font-family: Verdana, Geneva, sans-serif;
   font-size: 10pt;
   color: #828282;
+}
+
+.stories {
+  list-style-position: none;
+  padding-left: 1em;
 }
