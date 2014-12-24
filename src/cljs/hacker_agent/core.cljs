@@ -43,8 +43,9 @@
            (str by " | " (t/time-ago time) " | ")
            [:a {:href (str "/#/items/" id)} "link"]]
           [:p {:dangerouslySetInnerHTML {:__html text}}]
-          (when kids
-            [comment-list (r/wrap kids swap! data assoc :kids)])
+          [:span
+           (when kids
+             [comment-list (r/wrap kids swap! data assoc :kids)])]
           ])))])
 
 (defn comment-list [comments]
