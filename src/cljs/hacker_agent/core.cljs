@@ -96,11 +96,15 @@
 
 (defn top-stories [stories]
   [:ol.stories
-   (for [[index entry] (into (sorted-map) @stories)]
+   (for [[index entry] (into (sorted-map-by #(let [keyfn (comp js/parseInt name)]
+                                               (compare (keyfn %1)
+                                                        (keyfn %2))))
+                             @stories)]
      ^{:key index}
-     [:li [story-list-item
-           (r/wrap entry
-                   swap! stories assoc index)]])])
+     [:li
+      [story-list-item
+       (r/wrap entry
+               swap! stories assoc index)]])])
 
 ;; -------------------------
 ;; Views
