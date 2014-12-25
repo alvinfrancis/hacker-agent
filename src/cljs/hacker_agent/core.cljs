@@ -31,22 +31,28 @@
 
 (declare comment-list)
 (defn comment [data]
-  [:div.comment
-   (let [{:keys [id by kids parent text type time score deleted]} @data]
-     (when-not deleted
-       (if (not id)
-         [:p "Loading..."]
-         [:div
-          {:on-click #(.log js/console (clj->js @data))
-           :style {:cursor "pointer"}}
-          [:div.comhead
-           (str by " | " (t/time-ago time) " | ")
-           [:a {:href (str "/#/items/" id)} "link"]]
-          [:p {:dangerouslySetInnerHTML {:__html text}}]
-          [:span
-           (when kids
-             [comment-list (r/wrap kids swap! data assoc :kids)])]
-          ])))])
+  (let [collapse? (atom false)]
+    (fn [data]
+      (let [{:keys [id by kids parent text type time score deleted]} @data]
+        (when-not deleted
+          (if (not id)
+            [:p "Loading..."]
+            [:div.comment
+             [:div.comhead
+              [:span {:on-click #(swap! collapse? not)
+                      :style {:cursor :pointer}}
+               (if @collapse?
+                 "[+] "
+                 "[-] ")]
+              (str by " | " (t/time-ago time) " | ")
+              [:a {:href (str "/#/items/" id)} "link"]]
+             (when-not @collapse?
+               [:div
+                [:p {:dangerouslySetInnerHTML {:__html text}}]
+                [:span
+                 (when kids
+                   [comment-list (r/wrap kids swap! data assoc :kids)])]])
+             ]))))))
 
 (defn comment-list [comments]
   [:ul.comments
