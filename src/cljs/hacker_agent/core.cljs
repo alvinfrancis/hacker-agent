@@ -31,7 +31,7 @@
 
 (declare comment-list)
 (defn comment [data]
-  [:div
+  [:div.comment
    (let [{:keys [id by kids parent text type time score deleted]} @data]
      (when-not deleted
        (if (not id)
@@ -39,7 +39,7 @@
          [:div
           {:on-click #(.log js/console (clj->js @data))
            :style {:cursor "pointer"}}
-          [:p.subtext
+          [:div.comhead
            (str by " | " (t/time-ago time) " | ")
            [:a {:href (str "/#/items/" id)} "link"]]
           [:p {:dangerouslySetInnerHTML {:__html text}}]

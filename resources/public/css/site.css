@@ -28,6 +28,12 @@ body {
   transition: all 1s ease-in;
 }
 
+.comhead {
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 8pt;
+  color: #828282;
+}
+
 .subtext {
   font-family: Verdana, Geneva, sans-serif;
   font-size: 7pt;
@@ -86,6 +92,14 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+.comment {
+  margin-top: 1em;
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 9pt;
+  line-height: normal;
+  font-weight: normal;
 }
 
 .comments {
