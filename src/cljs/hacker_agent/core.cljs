@@ -69,7 +69,7 @@
         (str score " points by " by)
         " | "
         [:a {:href (str "/#/items/" id)}
-         (str (count kids) " comments")]]
+         (str (count kids) " threads")]]
        (when kids
          [comment-list (r/wrap kids swap! data assoc :kids)])])))
 
@@ -86,7 +86,7 @@
         (str score " points by " by)
         " | "
         [:a {:href (str "/#/items/" id)}
-         (str (count kids) " comments")]
+         (str (count kids) " threads")]
         " | "
         [:span {:on-click #(base/bind! app-state [:current-item]
                                        (base/id->fbref id)
