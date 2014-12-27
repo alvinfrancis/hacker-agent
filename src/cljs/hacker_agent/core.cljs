@@ -7,7 +7,8 @@
             [weasel.repl :as ws-repl]
             [cljs.core.async :as async :refer [put! chan <! >! close! merge]]
             [hacker-agent.hacker-base :as base]
-            [hacker-agent.time :as t])
+            [hacker-agent.time :as t]
+            [hacker-agent.utils :as utils])
   (:import goog.History))
 
 ;; -------------------------
