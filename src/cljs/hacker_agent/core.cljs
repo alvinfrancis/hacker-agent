@@ -75,11 +75,11 @@
          [comment-list (r/wrap kids swap! data assoc :kids)])])))
 
 (defn story-list-item [story]
-  (let [{:keys [by id title score url kids -new?]} @story]
+  (let [{:keys [by id title score url kids -updated?]} @story]
     (when (every? identity [by title score])
-      [:div {:class (if -new?
+      [:div {:class (if -updated?
                       (do
-                        (swap! story assoc :-new? false)
+                        (swap! story assoc :-updated? false)
                         "new")
                       "old")}
        [:p.title [:a {:href url} title]]
@@ -89,7 +89,7 @@
         [:a {:href (str "/#/items/" id)}
          (str (count kids) " threads")]
         " | "
-        [:span {:on-click #(base/bind! app-state [:current-item]
+        [:span {:on-click #(base/bind! story [:preview]
                                        (base/id->fbref id)
                                        base/item-binder)
                 :style {:cursor :pointer}}

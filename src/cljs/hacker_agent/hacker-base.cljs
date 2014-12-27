@@ -69,7 +69,7 @@
 (declare bind!)
 
 (defn story-binder [data path msg]
-  (swap! data assoc-in (conj path :-new?) true)
+  (swap! data assoc-in (conj path :-updated?) true)
   (let [[event key val] msg
         child-path (conj path key)]
     (case event
