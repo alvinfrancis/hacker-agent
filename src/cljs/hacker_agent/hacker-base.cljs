@@ -16,6 +16,8 @@
 
 (def top-stories (walk-root root [:topstories]))
 
+(def ^:dynamic closer-root nil)
+
 (defonce channel-closers (atom {}))
 
 (defonce type-chan?
@@ -23,12 +25,14 @@
     (fn [x] (= type-chan (type x)))))
 
 (defn- save-channel-closer! [data path channel]
-  (swap! channel-closers assoc-in
-         (conj (vec (cons data path)) :-closer)
-         channel))
+  (let [c-root (if closer-root closer-root data)]
+    (swap! channel-closers assoc-in
+           (conj (vec (cons c-root path)) :-closer)
+           channel)))
 
 (defn- close-channel! [data path]
-  (let [identifier (cons data path)]
+  (let [c-root (if closer-root closer-root data)
+        identifier (cons c-root path)]
     (when-let [closers (get-in @channel-closers identifier)]
       (walk/postwalk (fn [c]
                        (when (type-chan? c)
@@ -116,10 +120,14 @@
 (defn bind! [data path ref binder]
   (close-channel! data path)
   (let [close-chan (chan)
-        fbc (fb->chan ref close-chan)]
+        fbc (fb->chan ref close-chan)
+        cr closer-root
+        bind-fn (fn [data path msg]
+                  (binding [closer-root cr]
+                    (binder data path msg)))]
     (save-channel-closer! data path close-chan)
     (go-loop []
       (when-let [msg (<! fbc)]
-        (binder data path msg)
+        (bind-fn data path msg)
         (recur)))
     close-chan))
