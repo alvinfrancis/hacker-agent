@@ -38,7 +38,11 @@
                        (when (type-chan? c)
                          (put! c :close)))
                      closers)
-      (swap! channel-closers dissoc-in identifier))))
+      (swap! channel-closers
+             #(let [new-closers (dissoc-in % identifier)]
+                (if (empty? (new-closers c-root))
+                  (dissoc % c-root)
+                  new-closers))))))
 
 (defn- id->fbref [id]
   (walk-root root [:item (str id)]))
