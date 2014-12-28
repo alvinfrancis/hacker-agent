@@ -101,8 +101,7 @@
     {:component-will-unmount #(let [story (get (.. % -props -argv) 1)
                                     id (@story :id)]
                                 (binding [base/closer-root [:story-list-item id]]
-                                  (base/close-channel! story [])
-                                  (swap! story dissoc :preview)))}))
+                                  (base/unbind! story [:preview])))}))
 
 (defn top-stories [stories]
   [:ol.stories
