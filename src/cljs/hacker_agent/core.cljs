@@ -75,7 +75,7 @@
          [comment-list (r/wrap kids swap! data assoc :kids)])])))
 
 (defn story-list-item-fn [story]
-  (let [{:keys [by id title score url kids -updated?]} @story]
+  (let [{:keys [by id title score url kids preview -updated?]} @story]
     (when (every? identity [by title score])
       [:div {:class (if -updated?
                       (do
@@ -89,12 +89,21 @@
         [:a {:href (str "/#/items/" id)}
          (str (count kids) " threads")]
         " | "
-        [:span {:on-click #(binding [base/closer-root [:story-list-item id]]
-                             (base/bind! story [:preview]
-                                         (base/id->fbref id)
-                                         base/item-binder))
-                :style {:cursor :pointer}}
-         [:i "Preview"]]]])))
+        (if preview
+          [:span {:on-click #(binding [base/closer-root [:story-list-item id]]
+                               (base/close-channel! story [])
+                               (swap! story dissoc :preview))
+                  :style {:cursor :pointer}}
+           [:i "Close"]]
+          [:span {:on-click #(binding [base/closer-root [:story-list-item id]]
+                               (base/bind! story [:preview]
+                                           (base/id->fbref id)
+                                           base/item-binder))
+                  :style {:cursor :pointer}}
+           [:i "Preview"]])]
+       (when preview
+         [comment-list (r/wrap (preview :kids)
+                               swap! story assoc-in [:preview :kids])])])))
 
 (def story-list-item
   (with-meta story-list-item-fn
