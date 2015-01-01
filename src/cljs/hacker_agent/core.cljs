@@ -118,7 +118,7 @@
                                                (compare (keyfn %1)
                                                         (keyfn %2))))
                              @stories)]
-     ^{:key index}
+     ^{:key (entry :id)}
      [:li
       [story-list-item
        (r/wrap entry

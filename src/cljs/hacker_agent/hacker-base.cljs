@@ -74,7 +74,7 @@
   ([id close-chan]
    (fb->chan (id->fbref id) close-chan)))
 
-(declare bind!)
+(declare bind! unbind!)
 
 (defn story-binder [data path msg]
   (swap! data assoc-in (conj path :-updated?) true)
@@ -93,9 +93,15 @@
       :child_added (bind! data child-path
                           (id->fbref val)
                           story-binder)
-      :child_changed (bind! data child-path
-                            (id->fbref val)
-                            story-binder)
+      :child_changed (do
+                       (when-let [[old-index old-entry] (first (filter (fn [[index entry]]
+                                                                         (= (entry :id)
+                                                                            val))
+                                                                       (get-in @data path)))]
+                         (unbind! data (conj path old-index)))
+                       (bind! data child-path
+                              (id->fbref val)
+                              story-binder))
       (.log js/console (clj->js [event key val])))))
 
 (defn item-binder [data path msg]
