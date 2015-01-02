@@ -90,7 +90,6 @@
   (fn [id]
     (let [child-path (conj path id)]
       (when-not (get-in @data child-path)
-        (.log js/console (str "Binding " id))
         (bind! data child-path
                (id->fbref id)
                story-binder)))))
