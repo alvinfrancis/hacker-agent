@@ -79,33 +79,34 @@
 (defn story-list-item-fn [story]
   (let [{:keys [by id title score url kids preview -updated?]} @story]
     (when (every? identity [by title score])
-      [:div {:class (if -updated?
-                      (do
-                        (swap! story assoc :-updated? false)
-                        "new")
-                      "old")}
-       [:p.title [:a {:href url} title]]
-       [:p.subtext
-        (str score " points by " by)
-        " | "
-        [:a {:href (str "/#/items/" id)}
-         (str (count kids) " threads")]
-        " | "
-        (if preview
-          [:span {:on-click #(binding [base/closer-root [:story-list-item id]]
-                               (base/close-channel! story [])
-                               (swap! story dissoc :preview))
-                  :style {:cursor :pointer}}
-           [:i "Close"]]
-          [:span {:on-click #(binding [base/closer-root [:story-list-item id]]
-                               (base/bind! story [:preview]
-                                           (base/id->fbref id)
-                                           base/item-binder))
-                  :style {:cursor :pointer}}
-           [:i "Preview"]])]
-       (when preview
-         [comment-list (r/wrap (preview :kids)
-                               swap! story assoc-in [:preview :kids])])])))
+      [:li
+       [:div {:class (if -updated?
+                       (do
+                         (swap! story assoc :-updated? false)
+                         "new")
+                       "old")}
+        [:p.title [:a {:href url} title]]
+        [:p.subtext
+         (str score " points by " by)
+         " | "
+         [:a {:href (str "/#/items/" id)}
+          (str (count kids) " threads")]
+         " | "
+         (if preview
+           [:span {:on-click #(binding [base/closer-root [:story-list-item id]]
+                                (base/close-channel! story [])
+                                (swap! story dissoc :preview))
+                   :style {:cursor :pointer}}
+            [:i "Close"]]
+           [:span {:on-click #(binding [base/closer-root [:story-list-item id]]
+                                (base/bind! story [:preview]
+                                            (base/id->fbref id)
+                                            base/item-binder))
+                   :style {:cursor :pointer}}
+            [:i "Preview"]])]
+        (when preview
+          [comment-list (r/wrap (preview :kids)
+                                swap! story assoc-in [:preview :kids])])]])))
 
 (def story-list-item
   (with-meta story-list-item-fn
@@ -121,10 +122,9 @@
                                                         (keyfn %2))))
                              @stories)]
      ^{:key entry}
-     [:li
-      [story-list-item
-           (r/wrap (get @items entry)
-                   swap! items assoc entry)]])])
+     [story-list-item
+      (r/wrap (get @items entry)
+              swap! items assoc entry)])])
 
 ;; -------------------------
 ;; Views
