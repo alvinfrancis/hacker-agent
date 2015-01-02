@@ -86,23 +86,27 @@
       :child_removed (swap! data update-in path dissoc key)
       (.log js/console (clj->js [event key val])))))
 
-(defn stories-binder [data path msg]
-  (let [[event key val] msg
-        child-path (conj path key)]
-    (case event
-      :child_added (bind! data child-path
-                          (id->fbref val)
-                          story-binder)
-      :child_changed (do
-                       (when-let [[old-index old-entry] (first (filter (fn [[index entry]]
-                                                                         (= (entry :id)
-                                                                            val))
-                                                                       (get-in @data path)))]
-                         (unbind! data (conj path old-index)))
-                       (bind! data child-path
-                              (id->fbref val)
-                              story-binder))
-      (.log js/console (clj->js [event key val])))))
+(defn item-cache-fn [data path]
+  (fn [id]
+    (let [child-path (conj path id)]
+      (when-not (get-in @data child-path)
+        (.log js/console (str "Binding " id))
+        (bind! data child-path
+               (id->fbref id)
+               story-binder)))))
+
+(defn stories-binder [f]
+  (fn [data path msg]
+    (let [[event key val] msg
+          child-path (conj path key)]
+      (case event
+        :child_added (do
+                       (f val)
+                       (swap! data assoc-in child-path val))
+        :child_changed (do
+                         (f val)
+                         (swap! data assoc-in child-path val))
+        (.log js/console (clj->js [event key val]))))))
 
 (defn item-binder [data path msg]
   (let [[event key val] msg
