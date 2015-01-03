@@ -24,8 +24,8 @@ body {
 }
 
 .new {
-  opacity: 0;
-  transition: all 1s ease-in;
+  transform: scale(1.5);
+  color: #FF6600;
 }
 
 .comhead {

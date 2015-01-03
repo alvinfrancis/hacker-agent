@@ -63,13 +63,31 @@
      ^{:key id} [:li [comment (r/wrap sub-data
                                       swap! comments assoc id)]])])
 
+(defn anim-score-fn []
+  (let [this (r/current-component)]
+    [:span {:class (if (:updated? (r/state this))
+                     "new"
+                     "old")}
+     (:value (r/props this))]))
+
+(def anim-score
+  (with-meta anim-score-fn
+    {:component-will-receive-props (fn [this new-props]
+                                     (let [old-val (:value (r/props this))
+                                           new-val (:value (get new-props 1))]
+                                       (when-not (= old-val new-val)
+                                         (r/set-state this {:updated? true})
+                                         (go (async/timeout 1)
+                                             (r/set-state this {:updated? false})))))}))
+
 (defn story [data]
   (let [{:keys [id by title kids type time url score]} @data]
     (when id
       [:div.top-item
        [:p.title [:a {:href url} title]]
        [:p.subtext
-        (str score " points by " by)
+        [anim-score {:value score}]
+        (str " points by " by)
         " | "
         [:a {:href (str "/#/items/" id)}
          (str (count kids) " threads")]]
@@ -83,7 +101,8 @@
        [:div
         [:p.title [:a {:href url} title]]
         [:p.subtext
-         (str score " points by " by)
+         [anim-score {:value score}]
+         (str " points by " by)
          " | "
          [:a {:href (str "/#/items/" id)}
           (str (count kids) " threads")]
