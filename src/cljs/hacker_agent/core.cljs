@@ -77,14 +77,10 @@
          [comment-list (r/wrap kids swap! data assoc :kids)])])))
 
 (defn story-list-item-fn [story]
-  (let [{:keys [by id title score url kids preview -updated?]} @story]
+  (let [{:keys [by id title score url kids preview]} @story]
     (when (every? identity [by title score])
       [:li
-       [:div {:class (if -updated?
-                       (do
-                         (swap! story assoc :-updated? false)
-                         "new")
-                       "old")}
+       [:div
         [:p.title [:a {:href url} title]]
         [:p.subtext
          (str score " points by " by)
