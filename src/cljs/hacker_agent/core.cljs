@@ -84,7 +84,8 @@
   (let [{:keys [id by title kids type time url score]} @data]
     (when id
       [:div.top-item
-       [:p.title [:a {:href url} title]]
+       [:p.title [:a {:href url} title]
+         [:span.comhead (str " (" (utils/domain url) ") ")]]
        [:p.subtext
         [anim-score {:value score}]
         (str " points by " by)
@@ -99,7 +100,8 @@
     (when (every? identity [by title score])
       [:li
        [:div
-        [:p.title [:a {:href url} title]]
+        [:p.title [:a {:href url} title]
+         [:span.comhead (str " (" (utils/domain url) ") ")]]
         [:p.subtext
          [anim-score {:value score}]
          (str " points by " by)
