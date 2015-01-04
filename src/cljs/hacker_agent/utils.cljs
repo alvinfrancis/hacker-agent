@@ -9,3 +9,8 @@
 
 (defn log-clj [o]
   (.log js/console (clj->js o)))
+
+(defn domain [url]
+  (let [re (new js/RegExp "^https?\\:\\/\\/(www\\.)?([^\\/:?#]+)(?:[\\/:?#]|$)")
+        matches (.exec re url)]
+    (and matches (get matches 2))))
