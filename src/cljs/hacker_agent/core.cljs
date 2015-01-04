@@ -125,10 +125,10 @@
 
 (def story-list-item
   (with-meta story-list-item-fn
-    {:component-will-unmount #(let [story (get (.. % -props -argv) 1)
-                                    id (@story :id)]
-                                (binding [base/closer-root [:story-list-item id]]
-                                  (base/unbind! story [:preview])))}))
+    {:component-will-unmount #(let [story (get (.. % -props -argv) 1)]
+                                (when-let [id (:id @story)]
+                                  (binding [base/closer-root [:story-list-item id]]
+                                    (base/unbind! story [:preview]))))}))
 
 (defn top-stories [stories items]
   [:ol.stories
