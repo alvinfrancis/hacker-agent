@@ -63,22 +63,20 @@
      ^{:key id} [:li [comment (r/wrap sub-data
                                       swap! comments assoc id)]])])
 
-(defn anim-score-fn []
-  (let [this (r/current-component)]
-    [:span {:class (if (:updated? (r/state this))
-                     "new"
-                     "old")}
-     (:value (r/props this))]))
-
 (def anim-score
-  (with-meta anim-score-fn
-    {:component-will-receive-props (fn [this new-props]
-                                     (let [old-val (:value (r/props this))
-                                           new-val (:value (get new-props 1))]
-                                       (when-not (= old-val new-val)
-                                         (r/set-state this {:updated? true})
-                                         (go (async/timeout 1)
-                                             (r/set-state this {:updated? false})))))}))
+  (r/create-class
+   {:component-will-receive-props (fn [this new-props]
+                                    (let [old-val (:value (r/props this))
+                                          new-val (:value (get new-props 1))]
+                                      (when-not (= old-val new-val)
+                                        (r/set-state this {:updated? true})
+                                        (go (async/timeout 1)
+                                            (r/set-state this {:updated? false})))))
+    :render (fn [this]
+              [:span {:class (if (:updated? (r/state this))
+                               "new"
+                               "old")}
+               (:value (r/props this))])}))
 
 (defn story-title [title url]
   [:p.title [:a {:href url} title]
