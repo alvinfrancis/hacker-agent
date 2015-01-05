@@ -80,12 +80,15 @@
                                          (go (async/timeout 1)
                                              (r/set-state this {:updated? false})))))}))
 
+(defn story-title [title url]
+  [:p.title [:a {:href url} title]
+   [:span.comhead (str " (" (utils/domain url) ") ")]])
+
 (defn story [data]
   (let [{:keys [id by title kids type time url score]} @data]
     (when id
       [:div.top-item
-       [:p.title [:a {:href url} title]
-         [:span.comhead (str " (" (utils/domain url) ") ")]]
+       [story-title title url]
        [:p.subtext
         [anim-score {:value score}]
         (str " points by " by)
@@ -100,8 +103,7 @@
     (when (every? identity [by title score])
       [:li
        [:div
-        [:p.title [:a {:href url} title]
-         [:span.comhead (str " (" (utils/domain url) ") ")]]
+        [story-title title url]
         [:p.subtext
          [anim-score {:value score}]
          (str " points by " by)
