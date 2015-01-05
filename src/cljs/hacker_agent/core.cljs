@@ -82,7 +82,8 @@
 
 (defn story-title [title url]
   [:p.title [:a {:href url} title]
-   [:span.comhead (str " (" (utils/domain url) ") ")]])
+   (when-not (empty? url)
+     [:span.comhead (str " (" (utils/domain url) ") ")])])
 
 (defn story [data]
   (let [{:keys [id by title kids type time url score]} @data]
