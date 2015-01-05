@@ -132,7 +132,7 @@
                (id->fbref id)
                (r-item-binder (r-cache-fn data path)))))))
 
-(defn r-cache [data path id]
+(defn r-cache! [data path id]
   ((r-cache-fn data path) id))
 
 (defn item-binder [& [levels & more]]
