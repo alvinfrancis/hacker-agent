@@ -5,7 +5,7 @@
             [goog.events :as events]
             [goog.history.EventType :as EventType]
             [weasel.repl :as ws-repl]
-            [cljs.core.async :as async :refer [put! chan <! >! close! merge]]
+            [cljs.core.async :as async :refer [put! chan <! >! close!]]
             [hacker-agent.hacker-base :as base]
             [hacker-agent.time :as t]
             [hacker-agent.utils :as utils])
