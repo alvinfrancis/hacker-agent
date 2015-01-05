@@ -119,7 +119,7 @@
            [:span {:on-click #(binding [base/closer-root [:story-list-item id]]
                                 (base/bind! story [:preview]
                                             (base/id->fbref id)
-                                            base/item-binder))
+                                            (base/item-binder 1)))
                    :style {:cursor :pointer}}
             [:i "Preview"]])]
         (when preview
@@ -185,7 +185,7 @@
   (base/unbind! app-state [:current-item])
   (base/bind! app-state [:current-item]
               (base/id->fbref id)
-              base/item-binder))
+              (base/item-binder)))
 
 ;; -------------------------
 ;; Initialize app

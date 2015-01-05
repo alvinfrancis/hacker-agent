@@ -135,36 +135,29 @@
 (defn r-cache [data path id]
   ((r-cache-fn data path) id))
 
-(defn item-binder [data path msg]
-  (let [[event key val] msg
-        child-path (conj path key)]
-    (case event
-      :child_added (if (= key :kids)
-                     (do
-                       (swap! data
-                              (fn [d]
-                                (apply update-in d child-path assoc
-                                       (reduce #(into %1 [%2 {}])
-                                               [] val))))
-                       (doseq [id val]
-                         (bind! data (conj child-path id)
-                                (id->fbref id)
-                                item-binder)))
-                     (swap! data assoc-in child-path val))
-      :child_changed (if (= key :kids)
-                       (do
-                         (swap! data
-                                (fn [d]
-                                  (apply update-in d child-path assoc
-                                         (reduce #(into %1 [%2 {}])
-                                                 [] val))))
-                         (doseq [id val]
-                           (bind! data (conj child-path id)
-                                  (id->fbref id)
-                                  item-binder)))
-                       (swap! data assoc-in child-path val))
-      :child_removed (swap! data update-in path dissoc key)
-      (.log js/console (clj->js [event key val])))) )
+(defn item-binder [& [levels & more]]
+  (fn [data path msg]
+    (let [[event key val] msg
+          child-path (conj path key)
+          add-change-fn (fn []
+                          (if (= key :kids)
+                            (when (or (> levels 0) (not levels))
+                              (do
+                                (swap! data
+                                       (fn [d]
+                                         (apply update-in d child-path assoc
+                                                (reduce #(into %1 [%2 {}])
+                                                        [] val))))
+                                (doseq [id val]
+                                  (bind! data (conj child-path id)
+                                         (id->fbref id)
+                                         (item-binder (and levels (dec levels)))))))
+                            (swap! data assoc-in child-path val)))]
+      (case event
+        :child_added (add-change-fn)
+        :child_changed (add-change-fn)
+        :child_removed (swap! data update-in path dissoc key)
+        (.log js/console (clj->js [event key val]))))) )
 
 (defn unbind! [data path]
   (close-channel! data path)
