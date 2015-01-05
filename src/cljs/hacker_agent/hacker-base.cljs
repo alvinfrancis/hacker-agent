@@ -106,6 +106,35 @@
                          (swap! data assoc-in child-path val))
         (.log js/console (clj->js [event key val]))))))
 
+(defn r-item-binder [f]
+  (fn [data path msg]
+    (let [[event key val] msg
+          child-path (conj path key)]
+      (case event
+        :child_added (do
+                       (swap! data assoc-in child-path val)
+                       (when (= key :kids)
+                         (doseq [id val]
+                           (f id))))
+        :child_changed (do
+                         (swap! data assoc-in child-path val)
+                         (when (= key :kids)
+                           (doseq [id val]
+                             (f id))))
+        :child_removed (swap! data update-in path dissoc key)
+        (.log js/console (clj->js [event key val]))))))
+
+(defn- r-cache-fn [data path]
+  (fn [id] ; id is a str or number
+    (let [child-path (conj path (keyword (str id)))]
+      (when-not (get-in @data child-path)
+        (bind! data child-path
+               (id->fbref id)
+               (r-item-binder (r-cache-fn data path)))))))
+
+(defn r-cache [data path id]
+  ((r-cache-fn data path) id))
+
 (defn item-binder [data path msg]
   (let [[event key val] msg
         child-path (conj path key)]
