@@ -126,7 +126,7 @@
 
 (defn- r-cache-fn [data path]
   (fn [id] ; id is a str or number
-    (let [child-path (conj path (keyword (str id)))]
+    (let [child-path (conj path (long id))]
       (when-not (get-in @data child-path)
         (bind! data child-path
                (id->fbref id)
