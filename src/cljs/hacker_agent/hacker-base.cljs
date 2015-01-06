@@ -52,7 +52,7 @@
    (fb->chan fbref (chan)))
   ([fbref close-chan]
    (let [mult-close (mult close-chan)
-         events [:child_added :child_changed :child_removed]
+         events [:child_added :child_changed :child_removed :value]
          event-chans (map (fn [event]
                             (fb->chan fbref (tap mult-close (chan)) event))
                           events)]
@@ -83,6 +83,7 @@
       :child_added (swap! data assoc-in child-path val)
       :child_changed (swap! data assoc-in child-path val)
       :child_removed (swap! data update-in path dissoc key)
+      :value nil
       (.log js/console (clj->js [event key val])))))
 
 (defn item-cache-fn [data path]
@@ -104,6 +105,7 @@
         :child_changed (do
                          (f val)
                          (swap! data assoc-in child-path val))
+        :value nil
         (.log js/console (clj->js [event key val]))))))
 
 (defn r-item-binder [f]
@@ -119,6 +121,7 @@
         :child_added (add-change-fn)
         :child_changed (add-change-fn)
         :child_removed (swap! data update-in path dissoc key)
+        :value nil
         (.log js/console (clj->js [event key val]))))))
 
 (defn- r-cache-fn [data path]
@@ -153,6 +156,7 @@
         :child_added (add-change-fn)
         :child_changed (add-change-fn)
         :child_removed (swap! data update-in path dissoc key)
+        :value nil
         (.log js/console (clj->js [event key val]))))) )
 
 (defn unbind! [data path]
