@@ -20,7 +20,7 @@ body {
 }
 
 .old {
-  transition: all 1s ease-in;
+  transition: all 2s ease-in;
 }
 
 .new {
