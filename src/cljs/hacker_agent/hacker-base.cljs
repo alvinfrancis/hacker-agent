@@ -16,6 +16,8 @@
 
 (def top-stories (walk-root root :topstories))
 
+(def max-item (walk-root root :maxitem))
+
 (def ^:dynamic closer-root nil)
 
 (defonce channel-closers (atom {}))

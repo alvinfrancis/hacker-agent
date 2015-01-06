@@ -20,6 +20,20 @@
               (base/stories-binder
                (base/item-cache-fn app-state [:cache]))))
 
+(defonce new-synced
+  (base/bind! app-state [:stream] base/max-item
+              (fn [data path msg]
+                (let [[event key val] msg
+                      child-path (conj path key)
+                      add-change-fn #(do
+                                       (swap! data assoc-in child-path val)
+                                       (base/bind! data (conj path :item)
+                                                   (base/id->fbref val)
+                                                   base/story-binder))]
+                  (case event
+                    :value (add-change-fn)
+                    (.log js/console (clj->js [event key val])))))))
+
 ;; ------------------------
 ;; Components
 (defn nav []
@@ -30,7 +44,8 @@
     [:li [:a {:href "#"} "New"]]
     [:li [:a {:href "#"} "Threads"]]
     [:li [:a {:href "#"} "Comments"]]
-    [:li [:a {:href "#"} "Show"]]]])
+    [:li [:a {:href "#"} "Show"]]
+    [:li [:a {:href "#/stream"} "Stream"]]]])
 
 (def ticker
   (r/create-class
@@ -185,6 +200,13 @@
       "comment" [comment (r/wrap entry swap! state assoc :current-item)]
       [:p "Cannot render item"])))
 
+(defmethod page :stream [state]
+  (when-let [entry (get-in @state [:stream :item])]
+    (case (:type entry)
+      "story" [story (r/wrap entry swap! state assoc :current-item)]
+      "comment" [comment (r/wrap entry swap! state assoc :current-item)]
+      [:p "Cannot render item"])))
+
 (defn main-page [state]
   [:div.main
    [nav]
@@ -207,6 +229,9 @@
   (base/bind! app-state [:current-item]
               (base/id->fbref id)
               (base/item-binder)))
+
+(secretary/defroute "/stream" []
+  (swap! app-state assoc :render-view :stream))
 
 ;; -------------------------
 ;; Initialize app
