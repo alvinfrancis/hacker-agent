@@ -135,23 +135,22 @@
 (defn r-cache! [data path id]
   ((r-cache-fn data path) id))
 
-(defn item-binder [& [levels & more]]
+(defn item-binder [& {:keys [levels]}]
   (fn [data path msg]
     (let [[event key val] msg
           child-path (conj path key)
           add-change-fn (fn []
                           (if (= key :kids)
                             (when (or (> levels 0) (not levels))
-                              (do
-                                (swap! data
-                                       (fn [d]
-                                         (apply update-in d child-path assoc
-                                                (reduce #(into %1 [%2 {}])
-                                                        [] val))))
-                                (doseq [id val]
-                                  (bind! data (conj child-path id)
-                                         (id->fbref id)
-                                         (item-binder (and levels (dec levels)))))))
+                              (swap! data
+                                     (fn [d]
+                                       (apply update-in d child-path assoc
+                                              (reduce #(into %1 [%2 {}])
+                                                      [] val))))
+                              (doseq [id val]
+                                (bind! data (conj child-path id)
+                                       (id->fbref id)
+                                       (item-binder :levels (and levels (dec levels))))))
                             (swap! data assoc-in child-path val)))]
       (case event
         :child_added (add-change-fn)

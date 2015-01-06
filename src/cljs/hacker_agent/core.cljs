@@ -138,7 +138,7 @@
            [:span {:on-click #(binding [base/closer-root [:story-list-item id]]
                                 (base/bind! story [:preview]
                                             (base/id->fbref id)
-                                            (base/item-binder 1)))
+                                            (base/item-binder :levels 1)))
                    :style {:cursor :pointer}}
             [:i "Preview"]])]
         (when preview
