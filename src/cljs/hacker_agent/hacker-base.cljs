@@ -8,13 +8,13 @@
 
 (defonce root (js/Firebase. url))
 
-(defn- walk-root [r keys]
+(defn- walk-root [r & keys]
   (let [[k & ks] keys]
     (if ks
       (recur (.child r (clojure.core/name k)) ks)
       (.child r (clojure.core/name k)))))
 
-(def top-stories (walk-root root [:topstories]))
+(def top-stories (walk-root root :topstories))
 
 (def ^:dynamic closer-root nil)
 
@@ -45,7 +45,7 @@
                   new-closers))))))
 
 (defn- id->fbref [id]
-  (walk-root root [:item (str id)]))
+  (walk-root root :item (str id)))
 
 (defn- fb->chan
   ([fbref]
@@ -109,18 +109,15 @@
 (defn r-item-binder [f]
   (fn [data path msg]
     (let [[event key val] msg
-          child-path (conj path key)]
+          child-path (conj path key)
+          add-change-fn #(do
+                           (swap! data assoc-in child-path val)
+                           (when (= key :kids)
+                             (doseq [id val]
+                               (f id))))]
       (case event
-        :child_added (do
-                       (swap! data assoc-in child-path val)
-                       (when (= key :kids)
-                         (doseq [id val]
-                           (f id))))
-        :child_changed (do
-                         (swap! data assoc-in child-path val)
-                         (when (= key :kids)
-                           (doseq [id val]
-                             (f id))))
+        :child_added (add-change-fn)
+        :child_changed (add-change-fn)
         :child_removed (swap! data update-in path dissoc key)
         (.log js/console (clj->js [event key val]))))))
 
