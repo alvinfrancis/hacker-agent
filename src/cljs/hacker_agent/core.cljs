@@ -67,7 +67,7 @@
                [:p (:value (r/props this))]])}))
 
 (declare comment-list)
-(defn comment [data]
+(defn comment [data & top?]
   (let [collapse? (atom false)]
     (fn [data]
       (let [{:keys [id by kids parent text type time score deleted]} @data]
@@ -82,7 +82,11 @@
                  "[+] "
                  "[-] ")]
               (str by " | " (t/time-ago time) " | ")
-              [:a {:href (str "/#/items/" id)} "link"]]
+              [:a {:href (str "/#/items/" id)} "link"]
+              (when top?
+                [:span
+                 " | "
+                 [:a {:href (str "/#items/" parent)} "Parent"]])]
              (when-not @collapse?
                [:div
                 [:p {:dangerouslySetInnerHTML {:__html text}}]
@@ -197,7 +201,7 @@
   (when-let [entry (get-in @state [:current-item])]
     (case (:type entry)
       "story" [story (r/wrap entry swap! state assoc :current-item)]
-      "comment" [comment (r/wrap entry swap! state assoc :current-item)]
+      "comment" [comment (r/wrap entry swap! state assoc :current-item) true]
       [:p "Cannot render item"])))
 
 (defmethod page :stream [state]
