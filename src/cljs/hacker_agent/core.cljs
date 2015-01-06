@@ -32,6 +32,25 @@
     [:li [:a {:href "#"} "Comments"]]
     [:li [:a {:href "#"} "Show"]]]])
 
+(def ticker
+  (r/create-class
+   {:component-will-receive-props (fn [this new-props]
+                                    (let [old-val (:value (r/props this))
+                                          new-val (:value (get new-props 1))]
+                                      (when-not (= old-val new-val)
+                                        (r/set-state this {:updated? true}))))
+    :component-did-update (fn [this old-props old-children]
+                            (when (:updated? (r/state this))
+                              (r/set-state this {:updated? false})))
+    :render (fn [this]
+              [:div.nav
+               {:style (if (:updated? (r/state this))
+                         {}
+                         {:overflow :hidden
+                          :transition "all 3s ease-in"
+                          :opacity 0})}
+               [:p (:value (r/props this))]])}))
+
 (declare comment-list)
 (defn comment [data]
   (let [collapse? (atom false)]
