@@ -88,9 +88,10 @@
                                     (let [old-val (:value (r/props this))
                                           new-val (:value (get new-props 1))]
                                       (when-not (= old-val new-val)
-                                        (r/set-state this {:updated? true})
-                                        (go (async/timeout 1)
-                                            (r/set-state this {:updated? false})))))
+                                        (r/set-state this {:updated? true}))))
+    :component-did-update (fn [this old-props old-children]
+                            (when (:updated? (r/state this))
+                              (r/set-state this {:updated? false})))
     :render (fn [this]
               [:span {:class (if (:updated? (r/state this))
                                "new"
