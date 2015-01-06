@@ -20,19 +20,21 @@
               (base/stories-binder
                (base/item-cache-fn app-state [:cache]))))
 
+(defn stream-binder [f]
+  (fn [data path msg]
+    (let [[event key val] msg
+          child-path (conj path key)
+          add-change-fn #(do
+                           (f val)
+                           (swap! data assoc-in child-path val))]
+      (case event
+        :value (add-change-fn)
+        (.log js/console (clj->js [event key val]))))))
+
 (defonce new-synced
   (base/bind! app-state [:stream] base/max-item
-              (fn [data path msg]
-                (let [[event key val] msg
-                      child-path (conj path key)
-                      add-change-fn #(do
-                                       (swap! data assoc-in child-path val)
-                                       (base/bind! data (conj path :item)
-                                                   (base/id->fbref val)
-                                                   base/story-binder))]
-                  (case event
-                    :value (add-change-fn)
-                    (.log js/console (clj->js [event key val])))))))
+              (stream-binder
+               (base/item-cache-fn app-state [:stream :items]))))
 
 ;; ------------------------
 ;; Components
@@ -183,6 +185,17 @@
       (r/wrap (get @items entry)
               swap! items assoc entry)])])
 
+(defn stream [items]
+  [:ul
+   (for [[id entry] (reverse @items)]
+     ^{:key id}
+     (when-not (:deleted entry)
+       [:li
+        (case (:type entry)
+          "story" [story (r/wrap entry swap! assoc items id)]
+          "comment" [comment (r/wrap entry swap! assoc items id) true]
+          [:p "Cannot render item"])]))])
+
 ;; -------------------------
 ;; Views
 (defmulti page #(:render-view (deref %)))
@@ -205,11 +218,8 @@
       [:p "Cannot render item"])))
 
 (defmethod page :stream [state]
-  (when-let [entry (get-in @state [:stream :item])]
-    (case (:type entry)
-      "story" [story (r/wrap entry swap! state assoc :current-item)]
-      "comment" [comment (r/wrap entry swap! state assoc :current-item)]
-      [:p "Cannot render item"])))
+  (when-let [entries (get-in @state [:stream :items])]
+    [stream (r/wrap entries swap! assoc-in state [:stream :items])]))
 
 (defn main-page [state]
   [:div.main
