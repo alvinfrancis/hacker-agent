@@ -93,13 +93,17 @@
    (item-cache-fn data path 0))
   ([data path limit]
    (fn [id]
-     (let [cached (get-in @data path)
-           child-path (conj path id)]
-       (when-not (get-in @data child-path)
+     (let [cached (sort (get-in @data path))
+           child-path (conj path id)
+           in-cached? (get cached id)
+           over-limit (- (count cached) limit)]
+       (when-not in-cached?
          (when (and (> limit 0)
-                    (>= (count cached) limit))
-           (let [[first-key _] (-> cached sort first)]
-             (unbind! data (conj path first-key))))
+                    (>= over-limit 0))
+           (doseq [id (->> cached
+                           (take (inc over-limit))
+                           (map key))]
+             (unbind! data (conj path id))))
          (bind! data child-path
                 (id->fbref id)
                 story-binder))))))
