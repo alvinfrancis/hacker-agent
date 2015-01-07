@@ -104,6 +104,7 @@
                            (take (inc over-limit))
                            (map key))]
              (unbind! data (conj path id))))
+         (swap! data assoc-in child-path {})
          (bind! data child-path
                 (id->fbref id)
                 story-binder))))))
