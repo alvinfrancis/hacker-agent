@@ -88,13 +88,20 @@
       :value nil
       (.log js/console (clj->js [event key val])))))
 
-(defn item-cache-fn [data path]
-  (fn [id]
-    (let [child-path (conj path id)]
-      (when-not (get-in @data child-path)
-        (bind! data child-path
-               (id->fbref id)
-               story-binder)))))
+(defn item-cache-fn
+  ([data path]
+   (item-cache-fn data path 0))
+  ([data path limit]
+   (fn [id]
+     (let [cached (get-in @data path)
+           child-path (conj path id)]
+       (when-not (get-in @data child-path)
+         (when (and (> limit 0)
+                    (>= (count cached) limit))
+           (unbind! data (conj path (key (first cached)))))
+         (bind! data child-path
+                (id->fbref id)
+                story-binder))))))
 
 (defn stories-binder [f]
   (fn [data path msg]
