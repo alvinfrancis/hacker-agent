@@ -98,7 +98,8 @@
        (when-not (get-in @data child-path)
          (when (and (> limit 0)
                     (>= (count cached) limit))
-           (unbind! data (conj path (key (first cached)))))
+           (let [[first-key _] (-> cached sort first)]
+             (unbind! data (conj path first-key))))
          (bind! data child-path
                 (id->fbref id)
                 story-binder))))))
