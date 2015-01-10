@@ -22,6 +22,27 @@
 
 (defonce channel-closers (atom {}))
 
+(defonce cache-store (atom []))
+
+(defonce cache-limit 2000)
+
+(defn cache-ref-off [url ref]
+  (let [cached? (some (fn [[-url _]]
+                        (= -url url))
+                      @cache-store)]
+    (when-not cached?
+      (.on ref "value" identity)
+      (swap! cache-store
+             (fn [store]
+               (let [over-limit (- (count store) cache-limit)
+                     new-store (conj store [url #(.off ref "value" identity)])]
+                 (if (> over-limit 0)
+                   (do
+                     (doseq [[_ f] (take over-limit new-store)]
+                       (f))
+                     (into [] (drop over-limit new-store)))
+                   new-store)))))))
+
 (defonce type-chan?
   (let [type-chan (type (chan))]
     (fn [x] (= type-chan (type x)))))
@@ -181,6 +202,7 @@
   (swap! data dissoc-in path))
 
 (defn bind! [data path ref binder]
+  (cache-ref-off (.toString ref) ref)
   (close-channel! data path)
   (let [close-chan (chan)
         fbc (fb->chan ref close-chan)
