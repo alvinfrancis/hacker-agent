@@ -108,7 +108,8 @@
          (swap! data assoc-in child-path {})
          (bind! data child-path
                 (id->fbref id)
-                story-binder))))))
+                story-binder)))
+     id)))
 
 (defn stories-binder [f]
   (fn [data path msg]
