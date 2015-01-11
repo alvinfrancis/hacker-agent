@@ -238,7 +238,6 @@
 
 (secretary/defroute "/items/:id" [id]
   (swap! app-state assoc :render-view :item)
-  (base/r-cache! app-state [:items] id)
   (base/unbind! app-state [:current-item])
   (base/bind! app-state [:current-item]
               (base/id->fbref id)
