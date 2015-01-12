@@ -132,20 +132,6 @@
                 story-binder)))
      id)))
 
-(defn stories-binder [f]
-  (fn [data path msg]
-    (let [[event key val] msg
-          child-path (conj path key)]
-      (case event
-        :child_added (do
-                       (f val)
-                       (swap! data assoc-in child-path val))
-        :child_changed (do
-                         (f val)
-                         (swap! data assoc-in child-path val))
-        :value nil
-        (.log js/console (clj->js [event key val]))))))
-
 (defn r-item-binder [f]
   (fn [data path msg]
     (let [[event key val] msg
@@ -187,6 +173,14 @@
         :child_removed (remove-fn data path msg)
         :value (value-fn data path msg)
         (.log js/console (clj->js [event key val]))))))
+
+(defn stories-binder [f]
+  (let [add-change-fn (fn [data path [event key val]]
+                        (let [child-path (conj path key)]
+                          (swap! data assoc-in child-path val)
+                          (f val)))]
+    (custom-binder :add-fn add-change-fn
+                   :change-fn add-change-fn)))
 
 (defn item-binder [& {:keys [levels]}]
   (let [add-change-fn (fn [data path [event key val]]
