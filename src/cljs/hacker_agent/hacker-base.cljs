@@ -189,10 +189,8 @@
         (.log js/console (clj->js [event key val]))))))
 
 (defn item-binder [& {:keys [levels]}]
-  (fn [data path msg]
-    (let [[event key val] msg
-          child-path (conj path key)
-          add-change-fn (fn []
+  (let [add-change-fn (fn [data path [event key val]]
+                        (let [child-path (conj path key)]
                           (if (= key :kids)
                             (when (or (> levels 0) (not levels))
                               (swap! data
@@ -204,13 +202,9 @@
                                 (bind! data (conj child-path id)
                                        (id->fbref id)
                                        (item-binder :levels (and levels (dec levels))))))
-                            (swap! data assoc-in child-path val)))]
-      (case event
-        :child_added (add-change-fn)
-        :child_changed (add-change-fn)
-        :child_removed (swap! data update-in path dissoc key)
-        :value nil
-        (.log js/console (clj->js [event key val]))))) )
+                            (swap! data assoc-in child-path val))))]
+    (custom-binder :add-fn add-change-fn
+                   :change-fn add-change-fn)))
 
 (defn unbind! [data path]
   (close-channel! data path)
