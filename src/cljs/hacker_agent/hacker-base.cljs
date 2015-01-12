@@ -175,7 +175,7 @@
         :value (value-fn data path msg)
         (.log js/console (clj->js [event key val]))))))
 
-(defn stories-binder [f]
+(defn stories-binder-old [f]
   (let [add-change-fn (fn [data path [event key val]]
                         (let [child-path (conj path key)]
                           (swap! data assoc-in child-path val)
@@ -183,7 +183,7 @@
     (custom-binder :add-fn add-change-fn
                    :change-fn add-change-fn)))
 
-(def stories-binder-old
+(def stories-binder
   (let [add-change-fn (fn [data path [event key val]]
                         (let [list-path (into path [:list key])
                               item-path (into path [:items val])

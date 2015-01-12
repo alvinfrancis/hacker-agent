@@ -1,6 +1,7 @@
 (ns hacker-agent.core
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [reagent.core :as r :refer [atom]]
+            [clojure.set :as set]
             [secretary.core :as secretary :include-macros true]
             [goog.events :as events]
             [goog.history.EventType :as EventType]
@@ -17,8 +18,7 @@
 
 (defonce stories-synced
   (base/bind! app-state [:top-stories] base/top-stories
-              (base/stories-binder
-               (base/item-cache-fn app-state [:cache]))))
+              base/stories-binder))
 
 (defn stream-binder [f]
   (fn [data path msg]
@@ -174,16 +174,16 @@
                                   (binding [base/closer-root [:story-list-item id]]
                                     (base/unbind! story [:preview]))))}))
 
-(defn top-stories [stories items]
+(defn top-stories [stories]
   [:ol.stories
    (for [[index entry] (into (sorted-map-by #(let [keyfn (comp js/parseInt name)]
                                                (compare (keyfn %1)
                                                         (keyfn %2))))
-                             @stories)]
+                             (:list @stories))]
      ^{:key entry}
      [story-list-item
-      (r/wrap (get @items entry)
-              swap! items assoc entry)])])
+      (r/wrap (-> @stories :items (get entry))
+              swap! stories assoc-in [:items entry])])])
 
 (defn stream [items]
   [:ul
@@ -206,9 +206,7 @@
 (defmethod page :main [state]
   [top-stories
    (r/wrap (:top-stories @state)
-           swap! app-state assoc :top-stories)
-   (r/wrap (:cache @state)
-           swap! app-state assoc :cache)])
+           swap! app-state assoc :top-stories)])
 
 (defmethod page :item [state]
   (when-let [entry (get-in @state [:current-item])]
