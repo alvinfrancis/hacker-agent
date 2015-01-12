@@ -173,6 +173,21 @@
 (defn r-cache! [data path id]
   ((r-cache-fn data path) id))
 
+(defn custom-binder [& {:keys [add-fn change-fn remove-fn value-fn]
+                        :or [add-fn identity
+                             change-fn identity
+                             remove-fn identity
+                             value-fn identity]}]
+  (fn [data path msg]
+    (let [[event key val] msg
+          child-path (conj path key)]
+      (case event
+        :child_added (add-fn data path msg)
+        :child_changed (change-fn data path msg)
+        :child_removed (remove-fn data path msg)
+        :value (value-fn data path msg)
+        (.log js/console (clj->js [event key val]))))))
+
 (defn item-binder [& {:keys [levels]}]
   (fn [data path msg]
     (let [[event key val] msg
