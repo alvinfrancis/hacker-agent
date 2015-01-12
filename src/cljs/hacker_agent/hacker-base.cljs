@@ -1,6 +1,7 @@
 (ns hacker-agent.hacker-base
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [clojure.walk :as walk]
+            [clojure.set :as set]
             [cljs.core.async :as async :refer [put! chan <! >! close! merge mult tap]]
             [hacker-agent.utils :as utils :refer [dissoc-in]]))
 
@@ -179,6 +180,22 @@
                         (let [child-path (conj path key)]
                           (swap! data assoc-in child-path val)
                           (f val)))]
+    (custom-binder :add-fn add-change-fn
+                   :change-fn add-change-fn)))
+
+(def stories-binder-old
+  (let [add-change-fn (fn [data path [event key val]]
+                        (let [list-path (into path [:list key])
+                              item-path (into path [:items val])
+                              new-data (swap! data assoc-in list-path val)
+                              old-set (into #{} (keys (:items (:top-stories2 new-data))))
+                              new-set (into #{} (vals (:list (:top-stories2 new-data))))
+                              old-stories (set/difference old-set new-set)]
+                          (doseq [id old-stories]
+                            (unbind! data (into path [:items id])))
+                          (bind! data item-path
+                                 (id->fbref val)
+                                 story-binder)))]
     (custom-binder :add-fn add-change-fn
                    :change-fn add-change-fn)))
 
