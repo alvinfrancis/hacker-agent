@@ -17,6 +17,8 @@ body {
 
 .page {
   padding: 0 1.5em;
+  position: relative;
+  overflow: hidden;
 }
 
 .old {
