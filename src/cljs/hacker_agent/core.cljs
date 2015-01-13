@@ -62,10 +62,12 @@
     :render (fn [this]
               [:div.nav
                {:style (if (:updated? (r/state this))
-                         {}
-                         {:overflow :hidden
-                          :transition "all 3s ease-in"
-                          :opacity 0})}
+                         {:position :absolute
+                          :top :-25px}
+                         {:top :-25px
+                          :position :absolute
+                          :-webkit-animation  "slidein 3s"
+                          :animation "slidein 3s"})}
                [:p (:value (r/props this))]])}))
 
 (declare comment-list)
