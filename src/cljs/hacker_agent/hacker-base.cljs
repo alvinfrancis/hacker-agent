@@ -9,6 +9,12 @@
 
 (defonce root (js/Firebase. url))
 
+(defn goOffline []
+  (.goOffline js/Firebase))
+
+(defn goOnline []
+  (.goOnline js/Firebase))
+
 (defn- walk-root [r & keys]
   (let [[k & ks] keys]
     (if ks
