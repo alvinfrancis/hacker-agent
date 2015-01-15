@@ -1,4 +1,7 @@
-(ns hacker-agent.utils)
+(ns hacker-agent.utils
+  (:require [goog.dom :as dom]
+            [goog.events :as events]
+            [cljs.core.async :as async :refer [put! chan <!]]))
 
 (defn dissoc-in [data path]
   (let [prefix (butlast path)
@@ -22,3 +25,9 @@
                 (conj sub k)))
             m)
     []))
+
+(defn listen [el type]
+  (let [out (chan)]
+    (events/listen el type
+      (fn [e] (put! out e)))
+    out))
