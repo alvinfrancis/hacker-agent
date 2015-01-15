@@ -14,3 +14,11 @@
   (let [re (new js/RegExp "^https?\\:\\/\\/(www\\.)?([^\\/:?#]+)(?:[\\/:?#]|$)")
         matches (.exec re url)]
     (and matches (get matches 2))))
+
+(defn keys-in [m]
+  (if (map? m)
+    (mapcat (fn [[k v]]
+              (let [sub (keys-in v)]
+                (conj sub k)))
+            m)
+    []))
