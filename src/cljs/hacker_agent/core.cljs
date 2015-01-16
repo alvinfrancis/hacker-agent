@@ -3,13 +3,15 @@
   (:require [reagent.core :as r :refer [atom]]
             [clojure.set :as set]
             [secretary.core :as secretary :include-macros true]
+            [goog.dom :as dom]
             [goog.events :as events]
             [goog.history.EventType :as EventType]
             [weasel.repl :as ws-repl]
             [cljs.core.async :as async :refer [put! chan <! >! close!]]
             [hacker-agent.hacker-base :as base]
             [hacker-agent.time :as t]
-            [hacker-agent.utils :as utils])
+            [hacker-agent.utils :as utils]
+            [hacker-agent.debug :as debug])
   (:import goog.History))
 
 ;; -------------------------
@@ -35,6 +37,9 @@
   (base/bind! app-state [:stream] base/max-item
               (stream-binder
                (base/item-cache-fn app-state [:stream :items]))))
+;; -------------------------
+;; Debug
+(defonce debug? (atom false))
 
 ;; ------------------------
 ;; Components
@@ -221,8 +226,13 @@
   (when-let [entries (get-in @state [:stream :items])]
     [stream (r/wrap entries swap! assoc-in state [:stream :items])]))
 
+(defn debug [state]
+  (when @debug?
+    [debug/debug-view state]))
+
 (defn main-page [state]
   [:div.main
+   [debug state]
    [nav]
    [:div.page
     (page state)]])
@@ -263,3 +273,14 @@
 ;; need to run this after routes have been defined
 (defonce hooked
   (hook-browser-navigation!))
+
+;; -------------------------
+;; Events
+(defonce key-chan (utils/listen (dom/getDocument) (.-KEYPRESS events/EventType)))
+
+(defonce key-loop
+  (go-loop []
+    (when-let [event (<! key-chan)]
+      (when (= (.. event -keyCode) 4) ; CTRL-D
+        (swap! debug? not))
+      (recur))))
