@@ -228,7 +228,7 @@
 
 (defn debug [state]
   (when @debug?
-    [debug/debug-view state]))
+    [debug/console state]))
 
 (defn main-page [state]
   [:div.main

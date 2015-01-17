@@ -14,7 +14,7 @@
 
 (declare field field-list)
 
-(defn debug-view [state]
+(defn console [state]
   [:div.console
    [:h4 "Debug Console"]
    [field-list @state]])
