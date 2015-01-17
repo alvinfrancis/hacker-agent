@@ -1,5 +1,6 @@
 (ns hacker-agent.dev
   (:require [hacker-agent.core :as core]
+            [hacker-agent.debug :as debug]
             [figwheel.client :as figwheel :include-macros true]
             [weasel.repl :as weasel]
             [reagent.core :as r]))
@@ -13,3 +14,4 @@
 (weasel/connect "ws://localhost:9001" :verbose true)
 
 (core/init!)
+(debug/init! core/app-state)

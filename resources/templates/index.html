@@ -7,6 +7,9 @@
     {% endif %}
   </head>
   <body>
+    {% if dev %}
+      <div id="debug"></div>
+    {% endif %}
     <div id="app"></div>
     <script src="https://cdn.firebase.com/js/client/2.0.2/firebase.js"></script>
     {% if dev %}
