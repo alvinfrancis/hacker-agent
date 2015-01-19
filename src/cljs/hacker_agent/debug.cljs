@@ -21,37 +21,47 @@
   (when @show?
     [:div.console
      [:h4 "Debug Console"]
-     [field-list @state]]))
+     [field-list state]]))
 
 ;; Proxy into console for live reload
 (defn view [state]
   [console state])
 
-(defn field [field]
+(defn edit-value [value]
+  (if (< 50 (count (str @value)))
+    [:textarea {:rows 3
+                :value @value
+                :on-change #(reset! value (-> % .-target .-value))}]
+    [:input {:type "text"
+             :value @value
+             :on-change #(reset! value (-> % .-target .-value))}]))
+
+(defn field [k v]
   (let [collapse? (atom true)]
-    (fn [field]
-      (let [[k v] field]
-        [:div
-         [:p [:b (when-not @collapse?
-                   {:on-click #(reset! collapse? true)
-                    :style {:cursor :pointer
-                            :text-decoration :underline}})
-              (clj->js k)]
-          ": "
-          (if @collapse?
-            (if (map? v)
-              [:span {:on-click #(reset! collapse? false)
-                      :style {:cursor :pointer}}
-               "Object"]
-              (clj->js v))
-            (if (map? v)
-              [field-list v]
-              (clj->js v)))]]))))
+    (fn [k v]
+      [:div
+       [:p [:b (when-not @collapse?
+                 {:on-click #(reset! collapse? true)
+                  :style {:cursor :pointer
+                          :text-decoration :underline}})
+            (clj->js k)]
+        ": "
+        (if @collapse?
+          (if (map? @v)
+            [:span {:on-click #(reset! collapse? false)
+                    :style {:cursor :pointer}}
+             "Object"]
+            [edit-value v])
+          (if (map? @v)
+            [field-list v]
+            (clj->js v)))]])))
 
 (defn field-list [fields]
   [:ul
-   (for [f (into (sorted-map) fields)]
-     ^{:key (key f)} [:li [field f]])])
+   (for [f (into (sorted-map) @fields)]
+     (let [[k v] f]
+       ^{:key k} [:li
+                  [field k (r/wrap v swap! fields assoc k)]]))])
 
 (defn init! [state]
   (r/render-component [view state] (.getElementById js/document "debug")))

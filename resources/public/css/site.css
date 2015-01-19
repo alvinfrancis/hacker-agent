@@ -185,3 +185,20 @@ a:hover {
   border: 3px solid gray;
   overflow: auto;
 }
+
+.console input {
+  background: transparent;
+  font-family: Lucida Console, Monaco, monospace;
+  font-size: 10pt;
+  border: none;
+  color: gray;
+}
+
+.console textarea {
+  background: transparent;
+  font-family: Lucida Console, Monaco, monospace;
+  font-size: 10pt;
+  width: 100%;
+  border: none;
+  color: gray;
+}
