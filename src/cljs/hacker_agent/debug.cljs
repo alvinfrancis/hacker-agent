@@ -29,9 +29,8 @@
 
 (defn slider [value min max]
   [:input {:type "range" :value @value :min min :max max
-           :style {:width "100%"}
            :on-change #(let [new-val (-> % .-target .-value)]
-                         (reset! value new-val))}])
+                         (reset! value (int new-val)))}])
 
 (defn edit-value [value]
   (if (< 50 (count (str @value)))
