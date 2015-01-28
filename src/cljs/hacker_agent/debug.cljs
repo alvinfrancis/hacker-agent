@@ -68,8 +68,22 @@
        ^{:key k} [:li
                   [field k (r/wrap v swap! fields assoc k)]]))])
 
+(defonce state-history (atom []))
+
+(defonce track-history? (atom true))
+
+(defn init-state-tracker! [state]
+  (swap! state-history conj @state)
+  (go-loop []
+    (<! (async/timeout 1000))
+    (when (and @track-history?
+               (not (= (last @state-history) @state)))
+      (swap! state-history conj @state))
+    (recur)))
+
 (defn init! [state]
-  (r/render-component [view state] (.getElementById js/document "debug")))
+  (r/render-component [view state] (.getElementById js/document "debug"))
+  (init-state-tracker! state))
 
 (defonce key-chan (utils/listen (dom/getDocument) (.-KEYPRESS events/EventType)))
 
