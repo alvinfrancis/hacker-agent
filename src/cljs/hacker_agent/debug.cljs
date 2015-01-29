@@ -56,7 +56,9 @@
             [:span {:on-click #(reset! collapse? false)
                     :style {:cursor :pointer}}
              "Object"]
-            [edit-value v])
+            (if (= k :score)
+              [slider v 0 1000]
+              [edit-value v]))
           (if (map? @v)
             [field-list v]
             (clj->js v)))]])))
