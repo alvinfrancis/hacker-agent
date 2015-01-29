@@ -9,23 +9,14 @@
             [goog.history.EventType :as EventType]
             [weasel.repl :as ws-repl]
             [cljs.core.async :as async :refer [put! chan <! >! close!]]
-            [hacker-agent.utils :as utils]))
+            [hacker-agent.utils :as utils]
+            [hacker-agent.time :as t]))
 
 (defonce show? (atom false))
 
 (defonce debug-chan (chan))
 
 (declare field field-list)
-
-(defn console [state]
-  (when @show?
-    [:div.console
-     [:h4 "Debug Console"]
-     [field-list state]]))
-
-;; Proxy into console for live reload
-(defn view [state]
-  [console state])
 
 (defn slider [value min max]
   [:input {:type "range" :value @value :min min :max max
@@ -83,15 +74,3 @@
       (swap! state-history conj @state))
     (recur)))
 
-(defn init! [state]
-  (r/render-component [view state] (.getElementById js/document "debug"))
-  (init-state-tracker! state))
-
-(defonce key-chan (utils/listen (dom/getDocument) (.-KEYPRESS events/EventType)))
-
-(defonce key-loop
-  (go-loop []
-    (when-let [event (<! key-chan)]
-      (when (= (.. event -keyCode) 4)   ; CTRL-D
-        (swap! show? not))
-      (recur))))

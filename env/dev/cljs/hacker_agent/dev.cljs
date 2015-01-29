@@ -14,4 +14,4 @@
 (weasel/connect "ws://localhost:9001" :verbose true)
 
 (core/init!)
-(debug/init! core/app-state)
+(core/debug-init!)

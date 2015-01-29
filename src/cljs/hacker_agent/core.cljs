@@ -270,12 +270,49 @@
   (hook-browser-navigation!))
 
 ;; -------------------------
-;; Events
+;; Debug
+
+(defonce debug-show? (atom false))
+
 (defonce key-chan (utils/listen (dom/getDocument) (.-KEYPRESS events/EventType)))
+
+(defonce debug-toggle-chan (chan))
 
 (defonce key-loop
   (go-loop []
     (when-let [event (<! key-chan)]
-      (when (= (.. event -keyCode) 4) ; CTRL-D
-        (swap! debug? not))
+      (when (= (.. event -keyCode) 4)   ; CTRL-D
+        (>! debug-toggle-chan :close))
+      (recur))))
+
+(defonce debug-toggle-loop
+  (let [toggle-on? (atom false)]
+    (go-loop []
+      (<! debug-toggle-chan)
+      (swap! toggle-on? not)
+      (if @toggle-on?
+        (do
+          (base/goOffline!)
+          (reset! debug/track-history? false)
+          (reset! debug-show? true))
+        (do
+          (base/goOnline!)
+          (reset! app-state (second (last @debug/state-history)))
+          (reset! debug/track-history? true)
+          (reset! debug-show? false)))
+      (recur))))
+
+(defn console [state]
+  (when @debug-show?
+    [:div.console
+     [:h4 "Debug Console"]
+     [debug/slider-atom state debug/state-history]
+     [debug/field-list state]]))
+
+(defn view [state]
+  [console state])
+
+(defn debug-init! []
+  (r/render-component [view app-state] (.getElementById js/document "debug"))
+  (debug/init-state-tracker! app-state))
       (recur))))
