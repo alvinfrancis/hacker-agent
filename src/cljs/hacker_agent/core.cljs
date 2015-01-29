@@ -148,7 +148,7 @@
 (defn story-list-item-fn [story]
   (let [{:keys [by id title score url kids preview]} @story]
     (when (every? identity [by title score])
-      [:li
+      [:li.story-list-item
        [:div
         [story-title title url]
         [:p.subtext
