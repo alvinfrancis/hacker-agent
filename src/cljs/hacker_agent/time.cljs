@@ -1,6 +1,6 @@
 (ns hacker-agent.time)
 
-(defn- now []
+(defn now []
   (quot
    (.. js/Date (now))
    1000))
