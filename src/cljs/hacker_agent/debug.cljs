@@ -66,12 +66,13 @@
 (defonce track-history? (atom true))
 
 (defn init-state-tracker! [state]
-  (swap! state-history conj @state)
+  (reset! state-history [[(t/now) @state]])
   (go-loop []
-    (<! (async/timeout 1000))
+    (<! (async/timeout 100))
     (when (and @track-history?
-               (not (= (last @state-history) @state)))
-      (swap! state-history conj @state))
+               (not (= (second (last @state-history))
+                       @state)))
+      (swap! state-history conj [(t/now) @state]))
     (recur)))
 
 (defn slider-atom [state history]
