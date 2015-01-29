@@ -74,3 +74,31 @@
       (swap! state-history conj @state))
     (recur)))
 
+(defn slider-atom [state history]
+  (let [pos (first (keep-indexed #(when (= %2 @state) %1)
+                                 (map second @history)))
+        [current-time current-state] (nth @history (int pos))]
+    [:div
+     [:p (t/time-ago current-time)]
+     [:input {:type "range" :value pos :max (dec (count @history))
+              :on-change #(let [new-val (-> % .-target .-value)
+                                [_ target-state] (nth @history (int new-val)
+                                                      [nil @state])]
+                            (reset! state target-state))}]
+     [:button {:type :button
+               :on-click #(let [prev-pos (dec pos)
+                                [_ target-state] (nth @history prev-pos
+                                                      [nil @state])]
+                            (when (>= prev-pos 0)
+                              (reset! state target-state)))}
+      "<"]
+     [:button {:type :button
+               :on-click #(let [next-pos (inc pos)
+                                [_ target-state] (nth @history next-pos
+                                                      [nil @state])]
+                            (when (< next-pos (count @history))
+                              (reset! state target-state)))}
+      ">"]
+     [:button {:type :button
+               :on-click #(reset! state (second (last @history)))}
+      "Reset"]]))
