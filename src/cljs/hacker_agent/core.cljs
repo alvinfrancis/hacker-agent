@@ -226,13 +226,8 @@
   (when-let [entries (get-in @state [:stream :items])]
     [stream (r/wrap entries swap! assoc-in state [:stream :items])]))
 
-(defn debug [state]
-  (when @debug?
-    [debug/console state]))
-
 (defn main-page [state]
   [:div.main
-   [debug state]
    [nav]
    [:div.page
     (page state)]])
