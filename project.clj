@@ -52,10 +52,10 @@
                                   :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
 
                    :dependencies [[ring-mock "0.1.5"]
-                                  [ring/ring-devel "1.3.1"]
+                                  [ring/ring-devel "1.3.2"]
                                   [pjstadig/humane-test-output "0.6.0"]]
 
-                   :plugins [[lein-figwheel "0.1.4-SNAPSHOT"]
+                   :plugins [[lein-figwheel "0.2.0-SNAPSHOT"]
                              [cider/cider-nrepl "0.9.0-SNAPSHOT"]]
 
                    :injections [(require 'pjstadig.humane-test-output)
